@@ -1,0 +1,22 @@
+[Unit]
+Description=car-lab website API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=site8081
+Group=site8081
+WorkingDirectory=/srv/site-8081
+Environment=HOST=127.0.0.1
+Environment=PORT=18081
+ExecStart=/usr/bin/node /srv/site-8081/server/index.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/srv/site-8081
+
+[Install]
+WantedBy=multi-user.target
