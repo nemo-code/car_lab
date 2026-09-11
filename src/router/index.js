@@ -5,6 +5,7 @@ import ProjectsPage from '../views/ProjectsPage.vue'
 import ContactPage from '../views/ContactPage.vue'
 import ServicesPage from '../views/ServicesPage.vue'
 import TeamPage from '../views/TeamPage.vue'
+import ResourceLibraryPage from '../views/ResourceLibraryPage.vue'
 
 const routes = [
   {
@@ -23,6 +24,12 @@ const routes = [
     alias: '/Projects',
     name: 'projects',
     component: ProjectsPage,
+  },
+  {
+    path: '/resources',
+    alias: '/Resources',
+    name: 'resources',
+    component: ResourceLibraryPage,
   },
   {
     path: '/services',

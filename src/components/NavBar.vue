@@ -24,6 +24,7 @@ const menuItems = computed(() => store.data?.navigation ?? [
   { path: '/', label: 'Home' },
   { path: '/about', label: 'About Us' },
   { path: '/projects', label: 'Projects' },
+  { path: '/resources', label: '资源库' },
   { path: '/services', label: 'Services' },
   { path: '/team', label: 'Team' },
   { path: '/contact', label: 'Contact' },
