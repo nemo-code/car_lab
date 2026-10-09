@@ -2,12 +2,14 @@
 import HomePage from '../views/HomePage.vue'
 import AboutPage from '../views/AboutPage.vue'
 import ProjectsPage from '../views/ProjectsPage.vue'
-import ContactPage from '../views/ContactPage.vue'
 import ServicesPage from '../views/ServicesPage.vue'
-import TeamPage from '../views/TeamPage.vue'
 import ResourceLibraryPage from '../views/ResourceLibraryPage.vue'
+import LabTeamPage from '../views/LabTeamPage.vue'
+import PortalPage from '../views/PortalPage.vue'
 
 const routes = [
+  { path: '/teams/:id(software|hardware|simulation)', component: LabTeamPage },
+  { path: '/portal', component: PortalPage },
   {
     path: '/',
     name: 'home',
@@ -40,14 +42,12 @@ const routes = [
   {
     path: '/team',
     alias: '/Team',
-    name: 'team',
-    component: TeamPage,
+    redirect: '/teams/software',
   },
   {
     path: '/contact',
     alias: '/Contact',
-    name: 'contact',
-    component: ContactPage,
+    redirect: '/portal?mode=apply',
   },
   {
     path: '/:pathMatch(.*)*',

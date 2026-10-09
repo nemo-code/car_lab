@@ -10,6 +10,7 @@ Group=site8081
 WorkingDirectory=/srv/site-8081
 Environment=HOST=127.0.0.1
 Environment=PORT=18081
+Environment=LAB_REQUIRE_HTTPS=1
 ExecStart=/usr/bin/node /srv/site-8081/server/index.js
 Restart=always
 RestartSec=3

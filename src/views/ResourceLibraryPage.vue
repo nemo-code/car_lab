@@ -19,6 +19,8 @@
       </div>
     </section>
 
+    <section class="lab-wrap lab-published" aria-label="团队发布资源"><div class="lab-heading"><span class="lab-eyebrow">团队资料</span><h2>公开资源与内部资料</h2><p>公开资源任何人都可以阅读；内部资料仅限审核通过的本团队成员。</p></div><p v-if="resourceError" class="lab-error" role="alert">{{ resourceError }}</p><div v-if="published.length" class="lab-resource-list"><article v-for="item in published" :key="item.id" class="lab-resource-item"><div><span class="lab-eyebrow">{{ teamName(item.team) }} · {{ item.visibility === 'public' ? '公开' : '团队内部' }}</span><h3>{{ item.title }}</h3><p>{{ item.summary }}</p></div><button type="button" class="lab-outline" @click="openPublished(item)">阅读资料</button></article></div><p v-else class="lab-empty">暂无已发布资料。下方可以先查看实验室公开的资源目录。</p></section>
+
     <section class="library-section">
       <div class="section-heading">
         <div>
@@ -106,17 +108,23 @@
         </div>
       </aside>
     </div>
+    <div v-if="openedPublished" class="detail-backdrop" @click.self="openedPublished = null"><aside class="detail-panel" aria-label="团队资源正文"><button type="button" class="close-button" aria-label="关闭资源详情" @click="openedPublished = null">×</button><p class="eyebrow">{{ teamName(openedPublished.team) }}</p><h2>{{ openedPublished.title }}</h2><pre class="lab-resource-body">{{ openedPublished.body }}</pre></aside></div>
   </main>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useSiteStore } from '../stores/site'
+import { listResources, readResource } from '../api/platform'
+import { teamName } from '../lab'
 
 const siteStore = useSiteStore()
 const searchQuery = ref('')
 const selectedCategory = ref('all')
 const selectedResource = ref(null)
+const published = ref([]), openedPublished = ref(null), resourceError = ref('')
+onMounted(async () => { try { published.value = (await listResources()).data } catch { resourceError.value = '资源列表暂时无法加载' } })
+async function openPublished(item) { resourceError.value = ''; try { openedPublished.value = (await readResource(item.id)).data } catch { resourceError.value = '需要登录并通过所属团队审核才能阅读该资料。'; document.querySelector('.lab-published')?.scrollIntoView({ behavior: 'smooth' }) } }
 
 const fallback = {
   hero: {

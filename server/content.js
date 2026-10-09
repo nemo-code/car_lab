@@ -1,9 +1,9 @@
 ﻿export const siteContent = {
   brand: {
-    name: 'combinilen Hub',
-    tagline: 'Company Profile',
-    email: 'anvapilot@combinilen.hub',
-    phone: '028-0000-0000',
+    name: '智能网联汽车实验室',
+    tagline: '智能车辆与工程实践',
+    email: '',
+    phone: '',
     address: '成都东软学院 智能网联汽车实验室',
   },
   navigation: [
@@ -17,15 +17,11 @@
   ],
   footer: {
     links: [
-      { label: 'Contact', path: '/contact' },
-      { label: 'Projects', path: '/projects' },
-      { label: 'Services', path: '/services' },
+      { label: '加入实验室', path: '/portal?mode=apply' },
+      { label: '项目', path: '/projects' },
+      { label: '资源库', path: '/resources' },
     ],
-    socials: [
-      { label: 'GitHub', href: 'https://github.com' },
-      { label: 'Instagram', href: 'https://www.instagram.com' },
-      { label: 'Twitter', href: 'https://x.com' },
-    ],
+    socials: [],
   },
   home: {
     hero: {
@@ -95,33 +91,33 @@ achievements: [
   },
   projects: {
     hero: {
-      title: 'Selected Projects',
-      subtitle: 'A small set of work samples that show the team\'s range and delivery style.',
+      title: '实验室项目',
+      subtitle: '从嵌入式控制、机器视觉到仿真验证，了解我们实践的技术方向。',
     },
     items: [
       {
-        name: 'Campus Assistant',
-        category: 'Mini Program',
-        summary: 'Campus notices, service shortcuts, and student-facing utility features.',
-        stack: ['Vue', 'WeChat', 'UI'],
+        name: '鸿蒙智驾小车控制系统',
+        category: '嵌入式实训',
+        summary: '基于鸿蒙 Hi3861 主控板，实现车辆运动控制、传感器采集和上位机交互。',
+        stack: ['嵌入式', '传感器', '运动控制'],
       },
       {
-        name: 'Startup Website',
-        category: 'Company Website',
-        summary: 'A responsive homepage and multi-section information architecture.',
-        stack: ['Vue 3', 'Vite', 'Router'],
+        name: '果实成熟度视觉检测系统',
+        category: '机器视觉',
+        summary: '使用 OpenCV 完成图像预处理、颜色特征提取和成熟度识别。',
+        stack: ['OpenCV', '图像处理', '识别'],
       },
       {
-        name: 'AI Chatbot',
-        category: 'Prototype',
-        summary: 'A simple conversation layer for product demos and knowledge lookup.',
-        stack: ['API', 'UX', 'AI'],
+        name: '车路协同仿真验证平台',
+        category: '算法仿真',
+        summary: '在虚拟环境验证智能小车路径规划和运动控制算法。',
+        stack: ['仿真', '路径规划', '控制算法'],
       },
       {
-        name: 'Team Profile System',
-        category: 'Internal Tool',
-        summary: 'A lightweight profile site with shared content and contact submission flows.',
-        stack: ['Pinia', 'Node', 'Vite'],
+        name: '实验室网站与成员平台',
+        category: 'Web 应用',
+        summary: '展示团队与实验室资源，支持申请、成员审核和团队资料访问。',
+        stack: ['Vue', 'Node', '权限管理'],
       },
     ],
   },

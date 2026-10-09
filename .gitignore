@@ -31,3 +31,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+data/
+.playwright-cli/

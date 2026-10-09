@@ -3,10 +3,8 @@
     <div class="footer-container">
       <div class="footer-content">
         <div class="footer-left">
-          <h3 class="footer-logo">
-            {{ footerNameParts[0] }}<br>{{ footerNameParts[1] }}
-          </h3>
-          <p class="footer-email">{{ brand.email }}</p>
+          <h3 class="footer-logo">{{ brand.name }}</h3>
+          <p class="footer-email">{{ brand.address }}</p>
         </div>
 
         <div class="footer-center">
@@ -23,7 +21,7 @@
         </div>
 
         <div class="footer-right">
-          <div class="social-section">
+          <div v-if="socials.length" class="social-section">
             <h4 class="social-title">go out</h4>
             <div class="social-links">
               <a
@@ -43,8 +41,16 @@
 
       <div class="footer-bottom">
         <p class="footer-copyright">
-          Copyright © {{ new Date().getFullYear() }} {{ footerNameParts.join(' ') }}
+          Copyright © {{ new Date().getFullYear() }} {{ brand.name }}
         </p>
+        <a
+          class="icp-link"
+          href="https://beian.miit.gov.cn/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          蜀ICP备2026057846号-1
+        </a>
       </div>
     </div>
   </footer>
@@ -57,13 +63,8 @@ import { useSiteStore } from '../stores/site'
 const store = useSiteStore()
 
 const brand = computed(() => store.data?.brand ?? {
-  name: 'combinilen Hub',
-  email: 'anvapilot@combinilen.hub',
-})
-
-const footerNameParts = computed(() => {
-  const parts = (brand.value.name || 'combinilen Hub').split(' ')
-  return [parts[0] || 'combinilen', parts.slice(1).join(' ') || 'Hub']
+  name: '智能网联汽车实验室',
+  address: '成都东软学院',
 })
 
 const footerLinks = computed(() => store.data?.footer?.links ?? [
@@ -204,5 +205,19 @@ const socials = computed(() => store.data?.footer?.socials ?? [])
   color: #888;
   font-size: 13px;
   margin: 0;
+}
+
+.icp-link {
+  display: inline-block;
+  margin-top: 8px;
+  color: #888;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.icp-link:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 </style>

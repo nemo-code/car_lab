@@ -1,0 +1,12 @@
+import { request } from './client'
+const post = (path, data) => request(path, { method: 'POST', body: JSON.stringify(data) })
+export const getMe = () => request('/me')
+export const apply = data => post('/apply', data)
+export const login = data => post('/login', data)
+export const logout = () => post('/logout', {})
+export const changePassword = data => post('/password', data)
+export const listResources = () => request('/resources')
+export const readResource = id => request(`/resources/${encodeURIComponent(id)}`)
+export const publishResource = data => post('/resources', data)
+export const listApplications = () => request('/admin/applications')
+export const reviewApplication = (id, status) => post(`/admin/applications/${encodeURIComponent(id)}/review`, { status })

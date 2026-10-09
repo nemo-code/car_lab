@@ -15,6 +15,7 @@ import { onMounted } from 'vue'
 import NavBar from './components/NavBar.vue'
 import Footer from './components/Footer.vue'
 import { useSiteStore } from './stores/site'
+import './lab.css'
 
 const siteStore = useSiteStore()
 
@@ -31,7 +32,7 @@ onMounted(() => {
 }
 
 .main-content {
-  padding-top: 80px;
+  padding-top: 68px;
   flex: 1;
   background: #f8fafc;
 }
