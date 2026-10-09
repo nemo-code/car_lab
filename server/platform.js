@@ -8,10 +8,21 @@ const dbPath = process.env.LAB_DB_PATH || path.resolve('data/lab.sqlite')
 mkdirSync(path.dirname(dbPath), { recursive: true })
 const db = new DatabaseSync(dbPath)
 db.exec(`PRAGMA journal_mode=WAL;
-  CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member');
+  CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, student_id TEXT UNIQUE, username TEXT UNIQUE, name TEXT NOT NULL, grade TEXT, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member');
   CREATE TABLE IF NOT EXISTS applications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, statement TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, reviewed_at TEXT);
   CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
   CREATE TABLE IF NOT EXISTS resources (id TEXT PRIMARY KEY, team TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, visibility TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);`)
+// 旧库迁移：旧 users 表只有 (id, email, name, password_hash, team, status, role)，没有 student_id 列
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map(column => column.name)
+if (!userColumns.includes('student_id')) {
+  db.exec(`BEGIN;
+    ALTER TABLE users RENAME TO users_old;
+    CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT UNIQUE, student_id TEXT UNIQUE, username TEXT UNIQUE, name TEXT NOT NULL, grade TEXT, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member');
+    INSERT INTO users (id, email, name, password_hash, team, status, role)
+      SELECT id, email, name, password_hash, team, status, role FROM users_old;
+    DROP TABLE users_old;
+    COMMIT;`)
+}
 const hashToken = token => createHash('sha256').update(token).digest('hex')
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex')
@@ -25,35 +36,48 @@ function verifyPassword(password, stored) {
 export function createAdmin(email, name, password) {
   if (!email || password.length < 12) throw new Error('Admin email and password of 12+ characters required')
   if (db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new Error('Account exists')
-  db.prepare("INSERT INTO users VALUES (?, ?, ?, ?, 'software', 'approved', 'admin')")
-    .run(randomUUID(), email, name, hashPassword(password))
+  db.prepare('INSERT INTO users (id, email, name, password_hash, team, status, role) VALUES (?, ?, ?, ?, ?, ?, ?)')
+    .run(randomUUID(), email, name, hashPassword(password), 'software', 'approved', 'admin')
 }
-export function apply({ email, name, password, team, statement }) {
-  email = String(email || '').trim().toLowerCase()
+export function apply({ studentId, name, username, password, team, statement }) {
+  studentId = String(studentId || '').trim()
   name = String(name || '').trim()
+  username = String(username || '').trim()
   statement = String(statement || '').trim()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !name || name.length > 80 ||
-      typeof password !== 'string' || password.length < 10 || password.length > 128 ||
+  if (!/^\d{11}$/.test(studentId)) throw new Error('学号应为 11 位数字')
+  if (!name || name.length > 80 || typeof password !== 'string' || password.length < 10 || password.length > 128 ||
       !teams.includes(team) || !statement || statement.length > 1000) throw new Error('Invalid application fields')
+  if (username && username.length > 30) throw new Error('用户名不能超过 30 个字符')
+  if (db.prepare('SELECT id FROM users WHERE student_id = ?').get(studentId)) throw new Error('学号已被注册')
+  if (username && db.prepare('SELECT id FROM users WHERE username = ?').get(username)) throw new Error('用户名已被使用')
+  const grade = studentId.slice(0, 2) + '级'
   const userId = randomUUID(), id = randomUUID()
   const passwordHash = hashPassword(password)
   db.exec('BEGIN')
   try {
-    db.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)').run(userId, email, name, passwordHash, team, 'pending', 'member')
+    db.prepare('INSERT INTO users (id, email, student_id, username, name, grade, password_hash, team, status, role) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(userId, studentId, username || null, name, grade, passwordHash, team, 'pending', 'member')
     db.prepare('INSERT INTO applications VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, statement, 'pending', new Date().toISOString(), null)
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')
-    if (error.message.includes('UNIQUE')) throw new Error('Email already registered')
+    if (error.message.includes('UNIQUE')) {
+      if (error.message.includes('users.student_id')) throw new Error('学号已被注册')
+      if (error.message.includes('users.username')) throw new Error('用户名已被使用')
+      throw new Error('该账号已被注册')
+    }
     throw error
   }
   return { id, status: 'pending' }
 }
 export function publicUser(user) {
-  return { id: user.id, email: user.email, name: user.name, team: user.team, status: user.status, role: user.role }
+  return { id: user.id, email: user.email, studentId: user.student_id, username: user.username, name: user.name, grade: user.grade, team: user.team, status: user.status, role: user.role }
 }
-export function login(email, password) {
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(String(email || '').trim().toLowerCase())
+export function login(account, password) {
+  account = String(account || '').trim()
+  let user = db.prepare('SELECT * FROM users WHERE student_id = ?').get(account)
+  if (!user) user = db.prepare('SELECT * FROM users WHERE username = ?').get(account)
+  if (!user) user = db.prepare('SELECT * FROM users WHERE email = ?').get(account.toLowerCase())
   if (!user || typeof password !== 'string' || password.length > 128 || !verifyPassword(password, user.password_hash)) return null
   const token = randomBytes(32).toString('hex')
   db.prepare('INSERT INTO sessions VALUES (?, ?, ?)').run(hashToken(token), user.id, Date.now() + 7 * 86400000)
@@ -75,7 +99,7 @@ export function changePassword(userId, oldPassword, newPassword) {
   db.prepare('DELETE FROM sessions WHERE user_id = ?').run(userId)
 }
 export function applications() {
-  return db.prepare('SELECT a.id, a.statement, a.status, a.created_at, a.reviewed_at, u.name, u.email, u.team FROM applications a JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC').all()
+  return db.prepare('SELECT a.id, a.statement, a.status, a.created_at, a.reviewed_at, u.name, u.email, u.student_id, u.username, u.grade, u.team FROM applications a JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC').all()
 }
 export function review(id, status) {
   if (!['approved', 'rejected'].includes(status)) throw new Error('Invalid review status')
