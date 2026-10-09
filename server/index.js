@@ -143,10 +143,10 @@ const server = http.createServer(async (req, res) => {
       if (Date.now() - attempt.since > 900000) { attempt.count = 0; attempt.since = Date.now() }
       if (attempt.count >= 10) { sendJson(res, 429, { message: 'Too many attempts; retry later' }); return }
       const body = await readBody(req) || {}
-      const result = platform.login(body.email, body.password)
+      const result = platform.login(body.account ?? body.email, body.password)
       if (!result) {
         attempt.count++; failedLogins.set(key, attempt)
-        sendJson(res, 401, { message: 'Invalid email or password' }); return
+        sendJson(res, 401, { message: '账号或密码不正确' }); return
       }
       failedLogins.delete(key)
       const secure = process.env.LAB_REQUIRE_HTTPS === '1' || req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''
