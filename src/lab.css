@@ -70,6 +70,8 @@ html { scroll-behavior: smooth; }
 .lab-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 650; }
 .lab-form input, .lab-form select, .lab-form textarea { width: 100%; padding: 11px 12px; font: inherit; font-size: 15px; border: 1px solid #aabebb; border-radius: 4px; background: white; color: #193038; }
 .lab-form textarea { resize: vertical; }
+.lab-form .lab-field-error { color: #922d26; font-size: 13px; font-weight: 500; }
+.lab-form [aria-invalid="true"] { border-color: #b34139; }
 .lab-form .lab-span { grid-column: 1 / -1; }
 .lab-form button { justify-self: start; }
 .lab-notice, .lab-error { padding: 12px 16px; margin: 15px 0 !important; border-radius: 4px; background: #e5f3ee; color: #165b4d; }

@@ -34,9 +34,13 @@ test('student-id application, review, login and team resource authorization', as
     // 学号长度校验：10 位 / 12 位都应被拒绝
     assert.equal((await call('/apply', { ...applicant, studentId: '2501072073' })).status, 400)
     assert.equal((await call('/apply', { ...applicant, studentId: '250107207322' })).status, 400)
+    assert.equal((await call('/apply', { ...applicant, studentId: '2501072073x' })).status, 400)
     // 重复学号 / 重复用户名都应被拒绝
     assert.equal((await call('/apply', applicant)).status, 400)
     assert.equal((await call('/apply', { ...applicant, studentId: '25010720739' })).status, 400)
+    assert.equal((await call('/apply', { ...applicant, studentId: '25010720739', username: 'Lab_Student' })).status, 400)
+    assert.equal((await call('/apply', { ...applicant, studentId: '25010720739', username: '123student' })).status, 400)
+    assert.equal((await call('/login', { account: '2501072073', password: applicant.password })).body.message, '学号应为 11 位数字')
     // 学号登录，返回年级
     const pending = await call('/login', { account: applicant.studentId, password: applicant.password })
     assert.equal(pending.body.data.status, 'pending')
@@ -47,6 +51,7 @@ test('student-id application, review, login and team resource authorization', as
     const byUsername = await call('/login', { account: applicant.username, password: applicant.password })
     assert.equal(byUsername.body.data.studentId, '25010720732')
     assert.equal(byUsername.body.data.grade, '25级')
+    assert.equal((await call('/login', { account: 'LAB_STUDENT', password: applicant.password })).status, 200)
     // 错误密码登录失败
     assert.equal((await call('/login', { account: applicant.studentId, password: 'wrong-password' })).status, 401)
     // 管理员邮箱登录依然可用
@@ -100,23 +105,21 @@ test('legacy email-only database migrates to the student-id schema', async () =>
     legacy.exec("CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member')")
     legacy.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)').run(randomUUID(), 'oldadmin@example.org', 'Old Admin', passwordHash, 'software', 'approved', 'admin')
     legacy.close()
-    process.env.LAB_DB_PATH = dbFile
-    const platform = await import('./platform.js')
-    // 旧管理员仍可用邮箱登录
-    const admin = platform.login('oldadmin@example.org', 'legacy-password-2026')
-    assert.ok(admin, 'legacy admin login failed')
-    assert.equal(admin.user.role, 'admin')
-    assert.equal(admin.user.studentId, null)
-    // 迁移后可按新流程注册
-    platform.apply({ studentId: '24010720001', name: 'Newbie', password: 'newbie-password-2026', team: 'hardware', statement: 'hello' })
-    const listed = platform.applications()
-    assert.equal(listed.length, 1)
-    assert.equal(listed[0].student_id, '24010720001')
-    assert.equal(listed[0].grade, '24级')
-    const freshman = platform.login('24010720001', 'newbie-password-2026')
-    assert.equal(freshman.user.grade, '24级')
+    const migrated = spawnSync(process.execPath, ['--input-type=module', '-e', `
+      import assert from 'node:assert/strict'
+      import * as platform from './server/platform.js'
+      const admin = platform.login('oldadmin@example.org', 'legacy-password-2026')
+      assert.equal(admin?.user.role, 'admin')
+      assert.equal(admin.user.studentId, null)
+      platform.apply({ studentId: '24010720001', name: 'Newbie', password: 'newbie-password-2026', team: 'hardware', statement: 'hello' })
+      const listed = platform.applications()
+      assert.equal(listed.length, 1)
+      assert.equal(listed[0].student_id, '24010720001')
+      assert.equal(listed[0].grade, '24级')
+      assert.equal(platform.login('24010720001', 'newbie-password-2026').user.grade, '24级')
+    `], { env: { ...process.env, LAB_DB_PATH: dbFile }, encoding: 'utf8' })
+    assert.equal(migrated.status, 0, migrated.stderr)
   } finally {
-    delete process.env.LAB_DB_PATH
     rmSync(dir, { recursive: true, force: true })
   }
 })

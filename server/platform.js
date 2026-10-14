@@ -8,7 +8,7 @@ const dbPath = process.env.LAB_DB_PATH || path.resolve('data/lab.sqlite')
 mkdirSync(path.dirname(dbPath), { recursive: true })
 const db = new DatabaseSync(dbPath)
 db.exec(`PRAGMA journal_mode=WAL;
-  CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, student_id TEXT UNIQUE, username TEXT UNIQUE, name TEXT NOT NULL, grade TEXT, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member');
+  CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, student_id TEXT UNIQUE, username TEXT COLLATE NOCASE UNIQUE, name TEXT NOT NULL, grade TEXT, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member');
   CREATE TABLE IF NOT EXISTS applications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, statement TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', created_at TEXT NOT NULL, reviewed_at TEXT);
   CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
   CREATE TABLE IF NOT EXISTS resources (id TEXT PRIMARY KEY, team TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, visibility TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL);`)
@@ -23,6 +23,7 @@ if (!userColumns.includes('student_id')) {
     DROP TABLE users_old;
     COMMIT;`)
 }
+db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_username_nocase ON users(username COLLATE NOCASE)')
 const hashToken = token => createHash('sha256').update(token).digest('hex')
 export function hashPassword(password) {
   const salt = randomBytes(16).toString('hex')
@@ -45,6 +46,7 @@ export function apply({ studentId, name, username, password, team, statement }) 
   username = String(username || '').trim()
   statement = String(statement || '').trim()
   if (!/^\d{11}$/.test(studentId)) throw new Error('学号应为 11 位数字')
+  if (username && !/^\p{L}[\p{L}\p{N}_-]{1,23}$/u.test(username)) throw new Error('用户名须为 2-24 位，以字母或汉字开头，可包含数字、_、-')
   if (!name || name.length > 80 || typeof password !== 'string' || password.length < 10 || password.length > 128 ||
       !teams.includes(team) || !statement || statement.length > 1000) throw new Error('Invalid application fields')
   if (username && username.length > 30) throw new Error('用户名不能超过 30 个字符')
@@ -75,6 +77,7 @@ export function publicUser(user) {
 }
 export function login(account, password) {
   account = String(account || '').trim()
+  if (/^\d+$/.test(account) && !/^\d{11}$/.test(account)) throw new Error('学号应为 11 位数字')
   let user = db.prepare('SELECT * FROM users WHERE student_id = ?').get(account)
   if (!user) user = db.prepare('SELECT * FROM users WHERE username = ?').get(account)
   if (!user) user = db.prepare('SELECT * FROM users WHERE email = ?').get(account.toLowerCase())
