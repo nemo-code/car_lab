@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111d">
+  <meta name="description" content="智能网联实验室 2026 小学期成果展：智能小车、车载座舱、机器视觉与 Unity 仿真项目。">
+  <title>智能网联实验室 · 2026 小学期成果展</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="回到首页"><span class="brand-mark">IC</span><span>智能网联实验室<small>CONNECTED INTELLIGENCE LAB</small></span></a>
+      <nav class="nav-links" aria-label="主导航"><a href="#projects">成果展</a><a href="#insight">我们在做什么</a><a href="#join">加入实验室</a></nav>
+      <a class="nav-cta" href="#join">扫码进群 <span>↗</span></a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy-block section-reveal">
+          <div class="kicker">2026 · SUMMER TERM SHOWCASE</div>
+          <h1>把车造出来，<br>把想法 <em>开上路</em>。</h1>
+          <p class="hero-copy">这是智能网联实验室的小学期成果展。9 个小组，从一台循迹小车、一套座舱 App，到一款多人模拟驾驶游戏，把感知、决策、控制与交互做成了真正可以运行的作品。</p>
+          <div class="hero-actions"><a class="btn btn-primary" href="#projects">浏览全部成果 <span>↓</span></a><a class="btn btn-secondary" href="#join">加入钉钉群 <span>↗</span></a></div>
+          <div class="hero-meta"><span><strong>2026.09</strong> 小学期成果展</span><span>指导教师：王维宇</span><span>成都东软学院</span></div>
+        </div>
+        <div class="hero-visual section-reveal">
+          <div class="orbit"><div class="orbit-core"></div><i class="orbit-node node-a"></i><i class="orbit-node node-b"></i><i class="orbit-node node-c"></i><span class="visual-label label-a">SENSE / 感知</span><span class="visual-label label-b">DECIDE / 决策</span><span class="visual-label label-c">MOVE / 执行</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="projects" class="section">
+      <div class="container">
+        <div class="stats section-reveal"><div class="stat"><strong id="statProjects">9</strong><span>组成果项目</span></div><div class="stat"><strong id="statTracks">3</strong><span>条实践方向</span></div><div class="stat"><strong id="statVideos">9</strong><span>段演示视频</span></div><div class="stat"><strong id="statDocs">25</strong><span>份可查资料</span></div></div>
+        <div class="section-head section-reveal"><div><div class="kicker">THE SHOWCASE</div><h2>从底层驱动，到<br>可感知的体验。</h2></div><p>把“做过什么”讲清楚，也把“为什么值得继续做”展示出来。每张卡片都对应一个真实小组和一条可追溯的项目资料链。</p></div>
+        <div class="filter-bar section-reveal"><button class="filter-btn is-active" data-filter="all">全部项目</button><button class="filter-btn" data-filter="hardware">硬件实物</button><button class="filter-btn" data-filter="software">软件系统</button><button class="filter-btn" data-filter="game">仿真交互</button><label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="搜索 CAN / 小车 / Unity…" aria-label="搜索项目"></label></div>
+        <div id="projectGrid" class="project-grid" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="insight" class="section">
+      <div class="container manifesto">
+        <div class="manifesto-copy section-reveal"><div class="kicker">THE COMMON THREAD</div><h2>他们做的，不只是一个 Demo。</h2><p>从材料中可以看到，这批项目已经形成了很清晰的技术梯度：硬件组在练习“让机器动起来”，软件组在练习“让数据被看见、被理解”，游戏组则把这些能力变成了可交互、可协作的沉浸式体验。</p><p>这正是实验室适合招新的地方：你可以从一根线、一行代码或一张界面开始，逐步走到一套完整系统。</p></div>
+        <div class="pillars section-reveal"><div class="pillar"><div class="pillar-num">01 / BUILD</div><div><h3>让设备先动起来</h3><p>电机、传感器、PWM、PID、STM32：从底层控制理解“运动”是怎么发生的。</p></div></div><div class="pillar"><div class="pillar-num">02 / CONNECT</div><div><h3>让数据连起来</h3><p>CAN、SocketCAN、AIDL、TCP、Photon：把分散的输入组织成可靠的数据链路。</p></div></div><div class="pillar"><div class="pillar-num">03 / EXPERIENCE</div><div><h3>让智能被感受到</h3><p>座舱 UI、疲劳检测、语音告警、多人联机：把技术变成别人愿意使用的体验。</p></div></div></div>
+      </div>
+    </section>
+
+    <section id="join" class="section recruit">
+      <div class="container"><div class="recruit-panel section-reveal"><div><div class="kicker">JOIN THE NEXT BUILD</div><h2>下一台车，等你来造。</h2><p>如果你对嵌入式、Android、机器视觉、Unity、智能驾驶或机器人感兴趣，欢迎加入智能网联实验室。先扫码进群，再从一个小问题开始。</p><div class="hero-actions"><a class="btn btn-primary" href="assets/dingding-qr-large.png" target="_blank" rel="noopener">查看群二维码 <span>↗</span></a><a class="btn btn-secondary" href="#projects">先看成果 <span>↓</span></a></div></div><div class="qr-card"><img src="assets/dingding-qr-large.png" alt="智能网联汽车实验室钉钉群二维码"><strong>扫码加入钉钉群</strong><small>智能网联汽车实验室</small></div></div></div>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container footer-line"><span><strong>智能网联实验室</strong> · 2026 小学期成果展</span><span>页面整理日期：2026 年 9 月 21 日 · 资料来自各组提交文件</span></div></footer>
+
+  <div id="detailModal" class="modal" role="dialog" aria-modal="true" aria-label="项目详情"><div class="modal-backdrop"></div><div class="modal-window"><button class="modal-close" aria-label="关闭详情"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button><div id="modalBody"></div></div></div>
+  <script src="app.js"></script>
+</body>
+</html>
