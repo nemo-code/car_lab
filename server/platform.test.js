@@ -29,7 +29,7 @@ test('student-id application, review, login and team resource authorization', as
     }
     assert.ok(ready, 'server did not start')
     assert.equal((await fetch(base + '/resources')).status, 403)
-    const applicant = { studentId: '25010720732', username: 'lab_student', name: 'Student', password: 'student-password-2026', team: 'software', statement: 'Interested in software.' }
+    const applicant = { studentId: '25010720732', username: 'lab_student', name: 'Student', password: '123456', team: 'software', statement: '' }
     assert.equal((await call('/apply', applicant)).status, 201)
     // 学号长度校验：10 位 / 12 位都应被拒绝
     assert.equal((await call('/apply', { ...applicant, studentId: '2501072073' })).status, 400)

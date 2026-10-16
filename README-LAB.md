@@ -20,6 +20,11 @@ text resources. Public resource summaries are discoverable; private bodies
 are served only to an approved member of the same team or the administrator.
 Password changes invalidate every existing session for that account.
 
+Student registration requires a unique 11-digit student number and a name.
+Username and application statement are optional. Student passwords and member
+password changes require at least 6 characters. The first two student-number
+digits are stored as the grade label, such as `25` becoming `25级`.
+
 In production, set `LAB_REQUIRE_HTTPS=1`. The HTTPS virtual host must proxy
 `/api` directly to `127.0.0.1:18081` with `X-Forwarded-Proto: https`;
 the public HTTP 8081 virtual host must not be used for authenticated requests.

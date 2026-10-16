@@ -47,8 +47,8 @@ export function apply({ studentId, name, username, password, team, statement }) 
   statement = String(statement || '').trim()
   if (!/^\d{11}$/.test(studentId)) throw new Error('学号应为 11 位数字')
   if (username && !/^\p{L}[\p{L}\p{N}_-]{1,23}$/u.test(username)) throw new Error('用户名须为 2-24 位，以字母或汉字开头，可包含数字、_、-')
-  if (!name || name.length > 80 || typeof password !== 'string' || password.length < 10 || password.length > 128 ||
-      !teams.includes(team) || !statement || statement.length > 1000) throw new Error('Invalid application fields')
+  if (!name || name.length > 80 || typeof password !== 'string' || password.length < 6 || password.length > 128 ||
+      !teams.includes(team) || statement.length > 1000) throw new Error('Invalid application fields')
   if (username && username.length > 30) throw new Error('用户名不能超过 30 个字符')
   if (db.prepare('SELECT id FROM users WHERE student_id = ?').get(studentId)) throw new Error('学号已被注册')
   if (username && db.prepare('SELECT id FROM users WHERE username = ?').get(username)) throw new Error('用户名已被使用')
@@ -95,7 +95,7 @@ export function logout(token) {
   if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token))
 }
 export function changePassword(userId, oldPassword, newPassword) {
-  if (typeof newPassword !== 'string' || newPassword.length < 10 || newPassword.length > 128) throw new Error('Invalid new password')
+  if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 128) throw new Error('Invalid new password')
   const user = db.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId)
   if (!user || !verifyPassword(String(oldPassword || ''), user.password_hash)) throw new Error('Invalid old password')
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(newPassword), userId)
