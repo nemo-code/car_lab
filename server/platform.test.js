@@ -61,7 +61,7 @@ test('student-id application, review, login and team resource authorization', as
     assert.equal(created.status, 201)
     const id = created.body.data.id
     const listing = await call('/resources')
-    assert.equal(listing.body.data.length, 1)
+    assert.equal(listing.body.data.filter(item => !item.id.startsWith('git-')).length, 1)
     assert.ok(!JSON.stringify(listing.body).includes('secret source code'))
     assert.equal((await call(`/resources/${id}`)).status, 403)
     assert.equal((await call(`/resources/${id}`, undefined, pending.cookie)).status, 403)
@@ -103,6 +103,11 @@ test('legacy email-only database migrates to the student-id schema', async () =>
     const passwordHash = `${salt}:${scryptSync('legacy-password-2026', salt, 64).toString('hex')}`
     const legacy = new DatabaseSync(dbFile)
     legacy.exec("CREATE TABLE users (id TEXT PRIMARY KEY, email TEXT NOT NULL UNIQUE, name TEXT NOT NULL, password_hash TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member')")
+    const oldStudentId = randomUUID()
+    legacy.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)').run(oldStudentId, 'oldstudent@example.org', 'Old Student', passwordHash, 'hardware', 'approved', 'member')
+    legacy.exec('CREATE TABLE sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL)')
+    const { createHash } = await import('node:crypto')
+    legacy.prepare('INSERT INTO sessions VALUES (?, ?, ?)').run(createHash('sha256').update('legacy-token').digest('hex'), oldStudentId, Date.now() + 86400000)
     legacy.prepare('INSERT INTO users VALUES (?, ?, ?, ?, ?, ?, ?)').run(randomUUID(), 'oldadmin@example.org', 'Old Admin', passwordHash, 'software', 'approved', 'admin')
     legacy.close()
     const migrated = spawnSync(process.execPath, ['--input-type=module', '-e', `
@@ -111,6 +116,9 @@ test('legacy email-only database migrates to the student-id schema', async () =>
       const admin = platform.login('oldadmin@example.org', 'legacy-password-2026')
       assert.equal(admin?.user.role, 'admin')
       assert.equal(admin.user.studentId, null)
+      assert.equal(platform.currentUser('legacy-token').role, 'student')
+      assert.equal(platform.currentUser('legacy-token').name, 'Old Student')
+      assert.equal(platform.login('oldstudent@example.org', 'legacy-password-2026').user.role, 'student')
       platform.apply({ studentId: '24010720001', name: 'Newbie', password: 'newbie-password-2026', team: 'hardware', statement: 'hello' })
       const listed = platform.applications()
       assert.equal(listed.length, 1)

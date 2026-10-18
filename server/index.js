@@ -5,6 +5,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import * as platform from './platform.js'
+import { receiveFile, sendFile, discardFile } from './files.js'
 import {
   contactSubmissions,
   siteContent,
@@ -28,6 +29,10 @@ const mimeTypes = new Map([
   ['.jpg', 'image/jpeg'],
   ['.jpeg', 'image/jpeg'],
   ['.webp', 'image/webp'],
+  ['.mp4', 'video/mp4'],
+  ['.webm', 'video/webm'],
+  ['.pdf', 'application/pdf'],
+  ['.md', 'text/plain; charset=utf-8'],
   ['.ico', 'image/x-icon'],
 ])
 
@@ -76,13 +81,13 @@ async function tryServeStatic(res, pathname) {
     return false
   }
 
-  const safePath = pathname === '/' ? '/index.html' : pathname.replace(/\\/g, '/')
+  const safePath = pathname === '/' ? '/index.html' : decodeURIComponent(pathname).replace(/\\/g, '/')
   const candidate = path.resolve(distRoot, `.${safePath}`)
-  if (!candidate.startsWith(distRoot)) {
+  if (candidate !== distRoot && !candidate.startsWith(distRoot + path.sep)) {
     return false
   }
 
-  if (existsSync(candidate) && !candidate.endsWith(path.sep)) {
+  if (existsSync(candidate) && (await fs.stat(candidate)).isFile()) {
     const ext = path.extname(candidate).toLowerCase()
     const contentType = mimeTypes.get(ext) || 'application/octet-stream'
     const content = await fs.readFile(candidate)
@@ -91,6 +96,7 @@ async function tryServeStatic(res, pathname) {
     return true
   }
 
+  if (path.extname(safePath)) return false
   const indexPath = path.join(distRoot, 'index.html')
   const content = readFileSync(indexPath)
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -124,13 +130,41 @@ const server = http.createServer(async (req, res) => {
     }
     if (['POST', 'PATCH', 'DELETE'].includes(req.method)) {
       const origin = req.headers.origin
-      if ((origin && new URL(origin).host !== req.headers.host) || !req.headers['content-type']?.startsWith('application/json')) {
+      const expectedType = pathname === '/api/uploads' ? 'application/octet-stream' : 'application/json'
+      if ((origin && new URL(origin).host !== req.headers.host) || req.headers['sec-fetch-site'] === 'cross-site' || !req.headers['content-type']?.startsWith(expectedType)) {
         sendJson(res, 403, { message: 'Invalid request origin or content type' }); return
       }
     }
     const token = /(?:^|;\s*)lab_session=([a-f0-9]{64})(?:;|$)/.exec(req.headers.cookie || '')?.[1]
     const user = platform.currentUser(token)
-    const admin = user?.role === 'admin'
+    const admin = user?.role === 'admin' && platform.approved(user)
+    if (req.method === 'POST' && pathname === '/api/uploads') {
+      if (!platform.approved(user)) { sendJson(res, 403, { message: '请先登录并等待审核通过' }); return }
+      if (url.searchParams.get('purpose') === 'resource' && !admin) { sendJson(res, 403, { message: '仅管理员可上传资源附件' }); return }
+      sendJson(res, 201, { data: await receiveFile(req, url.searchParams, user) }); return
+    }
+    if (req.method === 'DELETE' && pathname.startsWith('/api/uploads/')) {
+      if (!platform.approved(user)) { sendJson(res, 403, { message: '请先登录并等待审核通过' }); return }
+      const removed = await discardFile(pathname.slice('/api/uploads/'.length), user)
+      sendJson(res, removed ? 200 : 403, removed ? { ok: true } : { message: '只能移除自己尚未提交的附件' }); return
+    }
+    if (req.method === 'GET' && pathname.startsWith('/api/files/')) {
+      const status = await sendFile(req, res, pathname.slice('/api/files/'.length), user)
+      if (status !== 200) sendJson(res, status, { message: status === 403 ? '没有附件访问权限' : '附件不存在' })
+      return
+    }
+    if (pathname === '/api/assignments' || pathname === '/api/submissions' || /^\/api\/assignments\/[^/]+\/submissions$/.test(pathname)) {
+      if (!platform.approved(user)) { sendJson(res, 403, { message: '请先登录并等待审核通过' }); return }
+      if (req.method === 'GET' && pathname === '/api/assignments') { sendJson(res, 200, { data: platform.listAssignments(user) }); return }
+      if (req.method === 'GET' && pathname === '/api/submissions') { sendJson(res, 200, { data: platform.listSubmissions(user) }); return }
+      if (req.method === 'POST' && pathname === '/api/assignments') {
+        if (!platform.staff(user)) { sendJson(res, 403, { message: '仅老师和管理员可发布作业' }); return }
+        sendJson(res, 201, { data: platform.addAssignment(await readBody(req) || {}, user) }); return
+      }
+      if (req.method === 'POST' && /^\/api\/assignments\/[^/]+\/submissions$/.test(pathname)) {
+        sendJson(res, 201, { data: platform.submitAssignment(pathname.split('/')[3], await readBody(req) || {}, user) }); return
+      }
+    }
     if (req.method === 'GET' && pathname === '/api/me') {
       sendJson(res, 200, { data: user }); return
     }
@@ -174,7 +208,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && pathname === '/api/resources') {
       if (!admin) { sendJson(res, 403, { message: 'Administrator required' }); return }
-      sendJson(res, 201, { data: platform.addResource(await readBody(req) || {}) }); return
+      sendJson(res, 201, { data: platform.addResource(await readBody(req) || {}, user) }); return
     }
     if (req.method === 'GET' && pathname === '/api/admin/applications') {
       if (!admin) { sendJson(res, 403, { message: 'Administrator required' }); return }

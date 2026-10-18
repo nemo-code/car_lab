@@ -8,6 +8,7 @@ import LabTeamPage from '../views/LabTeamPage.vue'
 import PortalPage from '../views/PortalPage.vue'
 
 const routes = [
+  { path: '/assignments', component: () => import('../views/AssignmentsPage.vue') },
   { path: '/teams/:id(software|hardware|simulation)', component: LabTeamPage },
   { path: '/portal', component: PortalPage },
   {

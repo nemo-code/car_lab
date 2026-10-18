@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js",
-    "test": "node --test server/platform.test.js"
+    "test": "node --test server/platform.test.js server/workflows.test.js"
   },
   "dependencies": {
     "pinia": "^3.0.4",
