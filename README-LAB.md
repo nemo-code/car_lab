@@ -29,3 +29,15 @@ In production, set `LAB_REQUIRE_HTTPS=1`. The HTTPS virtual host must proxy
 `/api` directly to `127.0.0.1:18081` with `X-Forwarded-Proto: https`;
 the public HTTP 8081 virtual host must not be used for authenticated requests.
 The existing site and database remain independent of port 8080.
+
+## Static publication checks
+
+After uploading a build from Windows, make **only the public build tree** readable
+by Nginx: run `bash deploy/fix-static-permissions.sh` on the production host.
+Directories under `/srv/site-8081/www` require mode 755 and files require mode 644.
+Do not apply these permissions to `/srv/site-8081/data` or private uploads.
+
+Run `python deploy/verify-public-assets.py https://v2xb6205.nemotoken.fun` after
+every release. A page returning HTTP 200 is insufficient: the referenced JavaScript
+must return a JavaScript MIME type and stylesheets must return `text/css`.
+Follow with a browser render check, including the lazy-loaded assignments route.
