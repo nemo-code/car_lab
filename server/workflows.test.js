@@ -123,6 +123,35 @@ test('teachers, team assignments, resource uploads, private downloads and persis
     const allTask = await call('/assignments', { title:'公共作业',body:'三组可提交',team:'all' }, admin)
     assert.equal(allTask.status,201)
     assert.ok((await call('/assignments',undefined,game)).body.data.some(a => a.id === allTask.body.data.id))
+    // Grade and team restrictions are combined on the server for listing and submission.
+    const freshmen = []
+    for (const [i, team] of ['software', 'hardware', 'simulation'].entries()) {
+      const studentId = `2601072073${i}`
+      await call('/apply', { studentId, name: `Freshman ${team}`, team, password: '123456' })
+      const login = await call('/login', { account: studentId, password: '123456' })
+      const application = (await call('/admin/applications', undefined, admin)).body.data.find(a => a.student_id === studentId)
+      await call(`/admin/applications/${application.id}/review`, { status: 'approved' }, admin)
+      freshmen.push(login.cookie)
+    }
+    const freshmanTask = await call('/assignments', { title:'大一入门', body:'个人入门记录', team:'all', targetGrade:'26级' }, admin)
+    assert.equal(freshmanTask.status, 201)
+    const seniorTask = await call('/assignments', { title:'软件高年级', body:'团队整理', team:'software', targetGrade:'!26级' }, admin)
+    assert.equal(seniorTask.status, 201)
+    for (const cookie of freshmen) {
+      const rows = (await call('/assignments', undefined, cookie)).body.data
+      assert.ok(rows.some(a => a.id === freshmanTask.body.data.id))
+      assert.ok(!rows.some(a => a.id === seniorTask.body.data.id))
+      assert.equal((await call(`/assignments/${seniorTask.body.data.id}/submissions`, { body:'越年级' }, cookie)).status,400)
+    }
+    const seniorRows = (await call('/assignments', undefined, student)).body.data
+    assert.ok(seniorRows.some(a => a.id === seniorTask.body.data.id))
+    assert.ok(!seniorRows.some(a => a.id === freshmanTask.body.data.id))
+    assert.ok(!(await call('/assignments', undefined, other)).body.data.some(a => a.id === seniorTask.body.data.id))
+    assert.equal((await call(`/assignments/${freshmanTask.body.data.id}/submissions`, { body:'越年级' }, student)).status,400)
+    assert.equal((await call('/assignments', { title:'无效年级',body:'x',team:'all',targetGrade:'2026' }, admin)).status,400)
+    const staffRows = (await call('/assignments', undefined, teacher.cookie)).body.data
+    assert.ok(staffRows.some(a => a.id === freshmanTask.body.data.id))
+    assert.ok(staffRows.some(a => a.id === seniorTask.body.data.id))
     // Deadline checks happen on the server, even if a stale client keeps its form open.
     const { DatabaseSync } = await import('node:sqlite')
     const db = new DatabaseSync(env.LAB_DB_PATH)
@@ -130,6 +159,7 @@ test('teachers, team assignments, resource uploads, private downloads and persis
     assert.equal((await call(`/assignments/${aid}/submissions`, { body:'late' }, student)).status,400)
     await stop(); await start()
     assert.equal((await call('/me',undefined,teacher.cookie)).body.data.role,'teacher')
+    assert.ok((await call('/assignments',undefined,freshmen[0])).body.data.some(a => a.id === freshmanTask.body.data.id && a.target_grade === '26级'))
     assert.equal((await call('/submissions',undefined,student)).body.data.length,2)
     assert.equal((await download(work.url,student)).status,200)
   } finally { await stop(); rmSync(dir,{recursive:true,force:true}) }

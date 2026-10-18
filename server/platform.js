@@ -38,6 +38,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS uploads (
   CREATE TABLE IF NOT EXISTS submissions (
   id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, author_id TEXT NOT NULL, body TEXT NOT NULL,
   attachments TEXT NOT NULL, created_at TEXT NOT NULL);`)
+const assignmentColumns = db.prepare('PRAGMA table_info(assignments)').all().map(c => c.name)
+if (!assignmentColumns.includes('target_grade')) db.exec("ALTER TABLE assignments ADD COLUMN target_grade TEXT NOT NULL DEFAULT 'all'")
 export const storageRoot = path.resolve(path.dirname(dbPath), 'uploads')
 mkdirSync(storageRoot, { recursive: true })
 const hashToken = token => createHash('sha256').update(token).digest('hex')
@@ -209,16 +211,19 @@ export function fileAccess(id, user) {
 export function listAssignments(user) {
   requireApproved(user)
   const rows = db.prepare('SELECT a.*, u.name AS author_name FROM assignments a JOIN users u ON u.id = a.author_id ORDER BY a.created_at DESC').all()
-  return rows.filter(a => staff(user) || a.team === 'all' || a.team === user.team)
+  return rows.filter(a => staff(user) || ((a.team === 'all' || a.team === user.team) &&
+    (a.target_grade === 'all' || a.target_grade === user.grade ||
+      (a.target_grade.startsWith('!') && a.target_grade.slice(1) !== user.grade))))
 }
-export function addAssignment({ title, body, team, dueAt }, user) {
+export function addAssignment({ title, body, team, dueAt, targetGrade = 'all' }, user) {
   if (!staff(user)) throw new Error('仅老师和管理员可发布作业')
   title = String(title || '').trim(); body = String(body || '').trim()
   if (!title || title.length > 120 || !body || body.length > 30000 || !['all', ...teams].includes(team)) throw new Error('请填写作业标题、要求及适用团队')
+  if (targetGrade !== 'all' && (typeof targetGrade !== 'string' || !/^!?\d{2}级$/.test(targetGrade))) throw new Error('年级范围无效')
   if (dueAt && (!Number.isFinite(Date.parse(dueAt)) || Date.parse(dueAt) <= Date.now())) throw new Error('截止时间必须在未来')
   const id = randomUUID()
-  db.prepare('INSERT INTO assignments VALUES (?, ?, ?, ?, ?, ?, ?)')
-    .run(id, title, body, team, dueAt ? new Date(dueAt).toISOString() : null, user.id, new Date().toISOString())
+  db.prepare('INSERT INTO assignments (id, title, body, team, due_at, author_id, created_at, target_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, title, body, team, dueAt ? new Date(dueAt).toISOString() : null, user.id, new Date().toISOString(), targetGrade)
   return { id }
 }
 export function submitAssignment(assignmentId, { body, attachments = [] }, user) {
