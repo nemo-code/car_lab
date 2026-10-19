@@ -1,0 +1,18 @@
+{
+  "version": "0.40.5",
+  "status": "isolated-verified-darwin_arm64",
+  "binaryPlatform": "darwin_arm64",
+  "binarySha256": "420d4c192368646c2209ba67c6b741de4a47b2550576dd6676228f6d5c97374c",
+  "binarySha256ByPlatform": {
+    "darwin_arm64": "420d4c192368646c2209ba67c6b741de4a47b2550576dd6676228f6d5c97374c",
+    "linux_arm64": "86e6a863386091b502068a58edd0f3c3b95f8fd5bd97dc00ec9c7199ec70835e"
+  },
+  "releaseAssetChecksums": {
+    "darwin_arm64": "d9a176e0491bc825fff88c2a4edffb07307f785ac2bd9710e82c5d223669fc17",
+    "darwin_amd64": "3640f0c4d9e0e5a47e321f10ddf6698508d4f20721bcf5dfb7c4192835e5105f",
+    "linux_amd64": "1dbea1b01eb3dfe64953513859d01e759c96650c4e3264fa4eecd54b769382e4",
+    "linux_arm64": "570baa1c45d2fb92fc0073582b945ca0ece03cbf9837ccabf49a222f99dd02e3"
+  },
+  "release": "https://github.com/pocketbase/pocketbase/releases/tag/v0.40.5",
+  "note": "禁止用于生产；须核验对应平台官方二进制 SHA-256 并完成隔离运行测试后晋级。"
+}

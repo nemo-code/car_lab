@@ -1,0 +1,22 @@
+[Unit]
+Description=car-lab PocketBase (isolated candidate)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=car-lab
+Group=car-lab
+WorkingDirectory=/srv/car-lab/pocketbase
+Environment=CAR_LAB_PUBLIC_DIR=/srv/car-lab/www
+ExecStart=/srv/car-lab/pocketbase/pocketbase serve --http=127.0.0.1:18082 --dir=/srv/car-lab/data/pb_data --hooksDir=/srv/car-lab/pocketbase/pb_hooks --migrationsDir=/srv/car-lab/pocketbase/pb_migrations --automigrate=false
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/car-lab/data/pb_data
+
+[Install]
+WantedBy=multi-user.target

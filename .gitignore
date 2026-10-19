@@ -32,4 +32,12 @@ Thumbs.db
 *.sln
 *.sw?
 data/
+
+# PocketBase local runtime data and downloaded release artifacts
+pocketbase/pb_data/
+pocketbase/pb_public/
+pocketbase/backups/
+pocketbase/*.zip
+pocketbase/pocketbase
+pocketbase/pocketbase.exe
 .playwright-cli/

@@ -6,10 +6,18 @@ import ServicesPage from '../views/ServicesPage.vue'
 import ResourceLibraryPage from '../views/ResourceLibraryPage.vue'
 import LabTeamPage from '../views/LabTeamPage.vue'
 import PortalPage from '../views/PortalPage.vue'
+import MemberPage from '../views/MemberPage.vue'
+import AdminPage from '../views/AdminPage.vue'
+import AnnouncementsPage from '../views/AnnouncementsPage.vue'
+import { getMe } from '../api/platform'
 
 const routes = [
-  { path: '/teams/:id(software|hardware|simulation)', component: LabTeamPage },
+  { path: '/teams/:id', component: LabTeamPage },
   { path: '/portal', component: PortalPage },
+  { path: '/member', component: MemberPage, meta: { requiresAuth: true } },
+  { path: '/admin', component: AdminPage, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/announcements', component: AnnouncementsPage },
+  { path: '/announcements/:slug', component: AnnouncementsPage },
   {
     path: '/',
     name: 'home',
@@ -61,6 +69,24 @@ const router = createRouter({
   scrollBehavior() {
     return { top: 0 }
   },
+})
+
+router.beforeEach(async (to) => {
+  if (!to.meta.requiresAuth) return true
+
+  try {
+    const user = (await getMe())?.data
+    if (!user) {
+      return { path: '/portal', query: { mode: 'login', redirect: to.fullPath } }
+    }
+    if (to.meta.requiresAdmin && user.role !== 'admin') {
+      return { path: '/member' }
+    }
+  } catch {
+    return { path: '/portal', query: { mode: 'login', redirect: to.fullPath } }
+  }
+
+  return true
 })
 
 export default router

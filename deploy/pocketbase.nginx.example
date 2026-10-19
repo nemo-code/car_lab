@@ -1,0 +1,54 @@
+server {
+    listen 443 ssl;
+    server_name lab.example.edu.cn;
+
+    root /srv/car-lab/www;
+    index index.html;
+
+    # Configure certificates using the host's existing TLS policy.
+    # ssl_certificate ...;
+    # ssl_certificate_key ...;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; img-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self';" always;
+
+    location = /api/realtime {
+        proxy_pass http://127.0.0.1:18082;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        proxy_send_timeout 1h;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:18082;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 120s;
+        proxy_send_timeout 120s;
+        # Allow multipart headers while keeping the PocketBase field limit at 30 MiB.
+        client_max_body_size 32m;
+    }
+
+    # Keep the native PocketBase dashboard outside the public business route.
+    # Expose /_/ only through a VPN or an explicit IP allowlist after review.
+    location /_/ {
+        deny all;
+        return 403;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

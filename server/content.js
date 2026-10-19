@@ -7,18 +7,18 @@
     address: '成都东软学院 智能网联汽车实验室',
   },
   navigation: [
-    { path: '/', label: 'Home' },
-    { path: '/about', label: 'About Us' },
-    { path: '/projects', label: 'Projects' },
+    { path: '/', label: '首页' },
+    { path: '/about', label: '实验室' },
+    { path: '/projects', label: '项目成果' },
     { path: '/resources', label: '资源库' },
-    { path: '/services', label: 'Services' },
-    { path: '/team', label: 'Team' },
-    { path: '/contact', label: 'Contact' },
+    { path: '/services', label: '实践方向' },
+    { path: '/team', label: '研究方向' },
+    { path: '/contact', label: '加入实验室' },
   ],
   footer: {
     links: [
-      { label: '加入实验室', path: '/portal?mode=apply' },
-      { label: '项目', path: '/projects' },
+      { label: '实验室介绍', path: '/about' },
+      { label: '项目成果', path: '/projects' },
       { label: '资源库', path: '/resources' },
     ],
     socials: [],
@@ -63,9 +63,8 @@
   },
   about: {
     hero: {
-      title: 'MEET OUR INSTRUCTORS',
-      subtitle:
-        'A compact team focused on student projects, practical iteration, and clear ownership.',
+      title: '把学习变成一段真实的工程经历。',
+      subtitle: '智能网联汽车实验室围绕车载嵌入式、智能小车控制、机器视觉与仿真交互开展项目实践。',
     },
     story: [
   '智能网联汽车实验室立足于新工科创新人才培养，聚焦车载嵌入式开发、智能小车控制、机器视觉感知与车路协同仿真技术，持续开展教学实训、项目研发与学科竞赛指导工作。',
@@ -79,7 +78,7 @@ mission: [
 ],
 values: ['务实实践', '技术融合', '创新探索', '协同共进'],
 advisors: [
-  { name: '王老师', role: '嵌入式与智能网联指，机器视觉算法指，项目与竞赛指导' },
+  { name: '王老师', role: '嵌入式与智能网联汽车、机器视觉方向指导，项目实践与竞赛指导' },
 ],
 achievements: [
   '搭建鸿蒙智驾小车综合实训平台。',
@@ -321,9 +320,3 @@ achievements: [
     note: 'Recruitment intent is tracked separately from contact messages.',
   },
 }
-
-export const contactSubmissions = []
-export const recruitmentSubmissions = []
-
-
-
