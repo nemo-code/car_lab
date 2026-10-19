@@ -30,6 +30,7 @@
         <router-link to="/projects" active-class="is-active" @click="closeMenu">{{ labelFor('/projects', '项目成果') }}</router-link>
         <router-link to="/announcements" active-class="is-active" @click="closeMenu">{{ labelFor('/announcements', '新闻公告') }}</router-link>
         <router-link to="/resources" active-class="is-active" @click="closeMenu">{{ labelFor('/resources', '资源库') }}</router-link>
+        <router-link to="/assignments" active-class="is-active" @click="closeMenu">作业</router-link>
         <router-link class="site-nav-cta" to="/portal?mode=apply" @click="closeMenu">{{ labelFor('/portal', '加入实验室') }} <span aria-hidden="true">↗</span></router-link>
       </nav>
     </div>

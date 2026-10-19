@@ -49,7 +49,7 @@ test('resources move through draft, published and offline while public reads sta
     const offlineId = offline.body.data.id
 
     const anonymousList = await call('/resources')
-    assert.deepEqual(anonymousList.body.data.map(item => item.id), [publishedId])
+    assert.deepEqual(anonymousList.body.data.map(item => item.id).filter(id => !id.startsWith('git-')), [publishedId])
     assert.equal((await call(`/resources/${draftId}`)).status, 403)
     assert.equal((await call(`/resources/${offlineId}`)).status, 403)
     const adminList = await call('/admin/resources', undefined, admin.cookie)

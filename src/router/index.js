@@ -12,7 +12,8 @@ import AnnouncementsPage from '../views/AnnouncementsPage.vue'
 import { getMe } from '../api/platform'
 
 const routes = [
-  { path: '/teams/:id', component: LabTeamPage },
+  { path: '/assignments', component: () => import('../views/AssignmentsPage.vue') },
+  { path: '/teams/:id(software|hardware|simulation)', component: LabTeamPage },
   { path: '/portal', component: PortalPage },
   { path: '/member', component: MemberPage, meta: { requiresAuth: true } },
   { path: '/admin', component: AdminPage, meta: { requiresAuth: true, requiresAdmin: true } },

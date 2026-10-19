@@ -58,6 +58,9 @@ done
 test "$ready" -eq 1
 
 cp -a "$release/dist/." "$base/www/"
+# scp from Windows may create directories with mode 700.
+find "$base/www" -type d -exec chmod 755 {} +
+find "$base/www" -type f -exec chmod 644 {} +
 curl -fsS --resolve "$domain:443:127.0.0.1" "https://$domain/" | grep -q '智能网联汽车实验室'
 curl -s -o /dev/null -w '8080_http=%{http_code}\n' http://127.0.0.1:8080/
 echo '8081 release complete'

@@ -19,6 +19,7 @@ const resourcePayload = data => ({
   visibility: data.visibility,
   body: data.body,
   status: data.status,
+  attachments: data.attachments,
 })
 export async function publishResource(data, onProgress, onCreated) {
   const hasFile = typeof File !== 'undefined' && data.file instanceof File
@@ -164,3 +165,12 @@ export async function offlineProjectAsset(id) {
   const result = await request(`/admin/project-assets/${encodeURIComponent(id)}/offline`, { method: 'POST', body: JSON.stringify({}) })
   return { data: result.data }
 }
+
+export const listAssignments = () => request('/assignments')
+export const createAssignment = data => post('/assignments', data)
+export const listSubmissions = () => request('/submissions')
+export const submitAssignment = (id, data) => post(`/assignments/${encodeURIComponent(id)}/submissions`, data)
+export const uploadFile = (file, purpose) => request(`/uploads?purpose=${encodeURIComponent(purpose)}&name=${encodeURIComponent(file.name)}`, {
+  method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file,
+})
+export const discardFile = id => request(`/uploads/${encodeURIComponent(id)}`, { method: 'DELETE', body: '{}' })

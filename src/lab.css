@@ -461,3 +461,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .announcement-more { display: inline-block; margin-top: .8rem; font-size: .86rem; font-weight: 700; }
 .announcement-detail { max-width: 860px; }
 .announcement-body { white-space: pre-wrap; font: inherit; line-height: 1.85; margin: 1.5rem 0; color: var(--ink, #1b252b); }
+.lab-file-picker { display:grid; gap:10px; min-width:0 }
+.lab-file-picker small { color:#5e6d74; line-height:1.6 }
+.lab-file-list { padding-left:20px; overflow-wrap:anywhere }
+.lab-attachments { display:grid; gap:16px; margin:20px 0 }
+.lab-attachment { display:grid; gap:8px; min-width:0; padding:12px; background:#f4f7f6; border-radius:8px; overflow-wrap:anywhere }
+.lab-attachment img, .lab-attachment video { display:block; max-width:100%; max-height:340px; height:auto; object-fit:contain; margin:auto }
+.lab-attachment a { color:#236967; overflow-wrap:anywhere }
+.lab-assignment-card { padding:24px 0; border-bottom:1px solid #dce4e2; min-width:0; overflow-wrap:anywhere }
+.lab-resource-body { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; line-height:1.8 }
+.lab-panel { min-width:0 }
+.lab-workspace-links { display:flex; flex-wrap:wrap; gap:12px; margin:20px 0 }
+.lab-panel input[type=file] { max-width:100%; height:auto; padding:12px }

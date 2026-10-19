@@ -113,7 +113,7 @@
         </div>
       </aside>
     </div>
-    <div v-if="openedPublished" class="detail-backdrop" @click.self="closePublishedResource"><aside ref="publishedDialog" class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="published-resource-title" tabindex="-1" @keydown="handlePublishedDialogKeydown"><button type="button" class="close-button" aria-label="关闭资源详情" @click="closePublishedResource">×</button><p class="eyebrow">{{ teamName(openedPublished.team) }}</p><h2 id="published-resource-title">{{ openedPublished.title }}</h2><pre class="lab-resource-body">{{ openedPublished.body }}</pre><a v-if="fileUrl" class="lab-outline" :href="fileUrl" target="_blank" rel="noopener" download>{{ openedPublished.filename || '下载附件' }}</a><p v-else-if="openedPublished.file && fileLoading" class="lab-notice">正在准备附件下载…</p></aside></div>
+    <div v-if="openedPublished" class="detail-backdrop" @click.self="closePublishedResource"><aside ref="publishedDialog" class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="published-resource-title" tabindex="-1" @keydown="handlePublishedDialogKeydown"><button type="button" class="close-button" aria-label="关闭资源详情" @click="closePublishedResource">×</button><p class="eyebrow">{{ teamName(openedPublished.team) }}</p><h2 id="published-resource-title">{{ openedPublished.title }}</h2><pre class="lab-resource-body">{{ openedPublished.body }}</pre><a v-if="fileUrl" class="lab-outline" :href="fileUrl" target="_blank" rel="noopener" download>{{ openedPublished.filename || '下载附件' }}</a>    <p v-else-if="openedPublished.file && fileLoading" class="lab-notice">正在准备附件下载…</p><AttachmentList :files="openedPublished.attachments" /></aside></div>
   </div>
 </template>
 
@@ -123,6 +123,7 @@ import { useSiteStore } from '../stores/site'
 import { useTeamsStore } from '../stores/teams'
 import { getProtectedResourceFileUrl, listResources, readResource } from '../api/platform'
 import { handleDialogKeydown, handleTablistKeydown } from '../utils/accessibility'
+import AttachmentList from '../components/AttachmentList.vue'
 
 const siteStore = useSiteStore()
 const teamsStore = useTeamsStore()

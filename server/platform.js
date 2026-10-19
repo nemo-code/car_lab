@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite'
 import { existsSync, mkdirSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { catalog } from './catalog.js'
 import { randomBytes, scryptSync, timingSafeEqual, createHash, randomUUID } from 'node:crypto'
 import { maxSitePayloadLength, siteSections, validateSitePayload, validateSitePayloadSize, validateSiteSection } from './site-content-contract.js'
 
@@ -22,8 +23,11 @@ db.exec(`PRAGMA journal_mode=WAL;
   CREATE TABLE IF NOT EXISTS team_memberships (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, team TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', role TEXT NOT NULL DEFAULT 'member', is_active INTEGER NOT NULL DEFAULT 1, joined_at TEXT, reviewed_by TEXT, reviewed_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(user_id, team));
   CREATE TABLE IF NOT EXISTS announcements (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, summary TEXT NOT NULL, body TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'notice', status TEXT NOT NULL DEFAULT 'draft', pinned INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0, published_at TEXT, created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires_at INTEGER NOT NULL);
-  CREATE TABLE IF NOT EXISTS resources (id TEXT PRIMARY KEY, team TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, visibility TEXT NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published', created_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS resources (id TEXT PRIMARY KEY, team TEXT NOT NULL, title TEXT NOT NULL, summary TEXT NOT NULL, visibility TEXT NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'published', created_at TEXT NOT NULL, attachments TEXT NOT NULL DEFAULT '[]');
   CREATE TABLE IF NOT EXISTS resource_contents (id TEXT PRIMARY KEY, resource_id TEXT NOT NULL UNIQUE, body TEXT NOT NULL, storage_key TEXT, filename TEXT, size INTEGER NOT NULL DEFAULT 0, mime TEXT, checksum TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, purpose TEXT NOT NULL, name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL, entity_id TEXT, created_at TEXT NOT NULL);
+  CREATE TABLE IF NOT EXISTS assignments (id TEXT PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL, team TEXT NOT NULL, due_at TEXT, author_id TEXT NOT NULL, created_at TEXT NOT NULL, target_grade TEXT NOT NULL DEFAULT 'all');
+  CREATE TABLE IF NOT EXISTS submissions (id TEXT PRIMARY KEY, assignment_id TEXT NOT NULL, author_id TEXT NOT NULL, body TEXT NOT NULL, attachments TEXT NOT NULL, created_at TEXT NOT NULL);
   CREATE TABLE IF NOT EXISTS projects (id TEXT PRIMARY KEY, legacy_id TEXT, edition TEXT NOT NULL DEFAULT 'custom', slug TEXT NOT NULL UNIQUE, project_group TEXT NOT NULL, category TEXT NOT NULL, category_label TEXT NOT NULL, title TEXT NOT NULL, subtitle TEXT NOT NULL, summary TEXT NOT NULL, tags TEXT NOT NULL, highlights TEXT NOT NULL, outcomes TEXT NOT NULL, tech TEXT NOT NULL, members TEXT NOT NULL, media TEXT NOT NULL, videos TEXT NOT NULL, files TEXT NOT NULL, accent TEXT NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'published', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, published_at TEXT);
   CREATE TABLE IF NOT EXISTS project_assets (id TEXT PRIMARY KEY, project_id TEXT NOT NULL, kind TEXT NOT NULL, label TEXT NOT NULL, source_type TEXT NOT NULL DEFAULT 'upload', availability TEXT NOT NULL DEFAULT 'available', legacy_path TEXT, storage_key TEXT, filename TEXT, size INTEGER NOT NULL DEFAULT 0, mime TEXT, checksum TEXT, sort_order INTEGER NOT NULL DEFAULT 0, published INTEGER NOT NULL DEFAULT 0, created_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE(project_id, kind, legacy_path));
   CREATE TABLE IF NOT EXISTS site_pages (key TEXT PRIMARY KEY, title TEXT NOT NULL, payload TEXT NOT NULL, published INTEGER NOT NULL DEFAULT 1, updated_at TEXT NOT NULL);
@@ -44,6 +48,7 @@ if (!userColumns.includes('is_active')) {
   db.exec('ALTER TABLE users ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1')
 }
 db.exec('CREATE UNIQUE INDEX IF NOT EXISTS users_username_nocase ON users(username COLLATE NOCASE)')
+db.exec("UPDATE users SET role = 'student' WHERE role = 'member'")
 const applicationColumns = db.prepare('PRAGMA table_info(applications)').all().map(column => column.name)
 if (!applicationColumns.includes('team')) db.exec('ALTER TABLE applications ADD COLUMN team TEXT')
 db.exec('CREATE INDEX IF NOT EXISTS applications_team_status ON applications(team, status)')
@@ -61,6 +66,7 @@ for (const user of db.prepare("SELECT id, team, status, role, is_active FROM use
 db.prepare(`UPDATE applications SET team = (SELECT u.team FROM users u WHERE u.id = applications.user_id) WHERE team IS NULL OR team = ''`).run()
 const resourceColumns = db.prepare('PRAGMA table_info(resources)').all().map(column => column.name)
 if (!resourceColumns.includes('status')) db.exec("ALTER TABLE resources ADD COLUMN status TEXT NOT NULL DEFAULT 'published'")
+if (!resourceColumns.includes('attachments')) db.exec("ALTER TABLE resources ADD COLUMN attachments TEXT NOT NULL DEFAULT '[]'")
 mkdirSync(resourceFilesRoot, { recursive: true })
 mkdirSync(projectFilesRoot, { recursive: true })
 db.exec(`INSERT OR IGNORE INTO resource_contents
@@ -71,6 +77,10 @@ const projectColumns = db.prepare('PRAGMA table_info(projects)').all().map(colum
 if (!projectColumns.includes('legacy_id')) db.exec("ALTER TABLE projects ADD COLUMN legacy_id TEXT")
 if (!projectColumns.includes('edition')) db.exec("ALTER TABLE projects ADD COLUMN edition TEXT NOT NULL DEFAULT 'custom'")
 if (!projectColumns.includes('sort_order')) db.exec('ALTER TABLE projects ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0')
+const assignmentColumns = db.prepare('PRAGMA table_info(assignments)').all().map(c => c.name)
+if (!assignmentColumns.includes('target_grade')) db.exec("ALTER TABLE assignments ADD COLUMN target_grade TEXT NOT NULL DEFAULT 'all'")
+export const storageRoot = path.resolve(path.dirname(dbPath), 'uploads')
+mkdirSync(storageRoot, { recursive: true })
 const hashToken = token => createHash('sha256').update(token).digest('hex')
 const safeMetadata = metadata => Object.fromEntries(Object.entries(metadata || {}).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)))
 export const RESOURCE_FILE_MAX_BYTES = 30 * 1024 * 1024
@@ -575,27 +585,31 @@ export function createAdmin(email, name, password) {
     .run(id, email, name, hashPassword(password), 'software', 'approved', 'admin')
   ensureMembership(id, 'software', 'approved')
 }
-export function apply({ studentId, name, username, password, team, statement }) {
+export function apply({ studentId, email, name, username, password, team, statement, role = 'student' }) {
   studentId = String(studentId || '').trim()
   name = String(name || '').trim()
   username = String(username || '').trim().toLowerCase()
   statement = String(statement || '').trim()
-  if (!/^\d{11}$/.test(studentId)) throw new Error('学号应为 11 位数字')
+  email = String(email || '').trim().toLowerCase()
+  if (!['student', 'teacher'].includes(role)) throw new Error('请选择学生或老师身份')
+  if (role === 'teacher' && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254)) throw new Error('请输入有效的老师邮箱')
+  if (role === 'student' && !/^\d{11}$/.test(studentId)) throw new Error('学号应为 11 位数字')
   if (username && !/^[a-z][a-z0-9_.-]{2,29}$/.test(username)) throw new Error('用户名须为 3-30 位小写英文，以字母开头，可包含字母、数字、_、-、.')
-  if (!name || name.length > 80 || typeof password !== 'string' || password.length < 10 || password.length > 128 ||
+  if (!name || name.length > 80 || typeof password !== 'string' || password.length < 6 || password.length > 128 ||
       !teams.includes(team) || statement.length > 1000) throw new Error('Invalid application fields')
   if (!teamAcceptsApplications(team)) throw new Error('Team is not accepting applications')
   if (username && username.length > 30) throw new Error('用户名不能超过 30 个字符')
-  if (db.prepare('SELECT id FROM users WHERE student_id = ?').get(studentId)) throw new Error('学号已被注册')
+  if (role === 'teacher' && db.prepare('SELECT id FROM users WHERE email = ?').get(email)) throw new Error('邮箱已被注册')
+  if (role === 'student' && db.prepare('SELECT id FROM users WHERE student_id = ?').get(studentId)) throw new Error('学号已被注册')
   if (username && db.prepare('SELECT id FROM users WHERE username = ?').get(username)) throw new Error('用户名已被使用')
-  const grade = studentId.slice(0, 2) + '级'
+  const grade = role === 'student' ? studentId.slice(0, 2) + '级' : null
   const userId = randomUUID(), id = randomUUID()
   const passwordHash = hashPassword(password)
   db.exec('BEGIN')
   try {
     if (!teamAcceptsApplications(team)) throw new Error('Team is not accepting applications')
-    db.prepare('INSERT INTO users (id, email, student_id, username, name, grade, password_hash, team, status, role) VALUES (?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(userId, studentId, username || null, name, grade, passwordHash, team, 'pending', 'member')
+    db.prepare('INSERT INTO users (id, email, student_id, username, name, grade, password_hash, team, status, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(userId, role === 'teacher' ? email : null, role === 'student' ? studentId : null, username || null, name, grade, passwordHash, team, 'pending', role)
     ensureMembership(userId, team, 'pending')
     db.prepare('INSERT INTO applications (id, user_id, team, statement, status, created_at, reviewed_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(id, userId, team, statement, 'pending', new Date().toISOString(), null)
@@ -652,7 +666,7 @@ export function changePassword(userId, oldPassword, newPassword) {
 }
 export function applications() {
   return db.prepare(`SELECT a.id, a.user_id, a.team, a.statement, a.status, a.created_at, a.reviewed_at,
-    u.name, u.email, u.student_id, u.username, u.grade, u.team AS primary_team
+    u.name, u.email, u.student_id, u.username, u.grade, u.team AS primary_team, u.role
     FROM applications a JOIN users u ON u.id = a.user_id ORDER BY a.created_at DESC`).all().map(row => ({ ...row, team: row.team || row.primary_team }))
 }
 export function members() {
@@ -683,7 +697,7 @@ export function resetMemberPassword(id, password, actorId) {
   }
   const member = db.prepare('SELECT id, role FROM users WHERE id = ?').get(id)
   if (!member) throw new Error('Member not found')
-  if (member.role !== 'member') throw new Error('Administrator account cannot be reset here')
+  if (!['member', 'student'].includes(member.role)) throw new Error('Administrator account cannot be reset here')
   db.exec('BEGIN')
   try {
     db.prepare('UPDATE users SET password_hash = ?, is_active = 1 WHERE id = ?')
@@ -720,7 +734,7 @@ export function applyTeam(userId, team, statement = '') {
   if (!teams.includes(team) || statement.length > 1000) throw new Error('Invalid membership application fields')
   if (!teamAcceptsApplications(team)) throw new Error('Team is not accepting applications')
   const user = db.prepare('SELECT id, role, is_active FROM users WHERE id = ?').get(userId)
-  if (!user || user.role !== 'member' || !user.is_active) throw new Error('Active member account required')
+  if (!user || !['member', 'student'].includes(user.role) || !user.is_active) throw new Error('Active member account required')
   const existing = db.prepare('SELECT status, is_active FROM team_memberships WHERE user_id = ? AND team = ?').get(userId, team)
   if (existing && existing.is_active && ['pending', 'approved'].includes(existing.status)) throw new Error('该团队申请已存在')
   const id = randomUUID()
@@ -770,7 +784,11 @@ export function restoreMembership(id, actorId) {
   return membershipRecord(db.prepare('SELECT * FROM team_memberships WHERE id = ? AND user_id = ?').get(id, membership.user_id))
 }
 export function listResources(user = null) {
-  return db.prepare("SELECT id, team, title, summary, visibility, status, created_at FROM resources WHERE status = 'published' AND visibility <> 'admin' ORDER BY created_at DESC").all().map(resourceSummary)
+  const records = db.prepare("SELECT id, team, title, summary, visibility, status, created_at FROM resources WHERE status = 'published' AND visibility <> 'admin' ORDER BY created_at DESC").all()
+  return [
+    ...catalog.map(({ body, attachments, ...summary }) => summary),
+    ...records.map(resourceSummary),
+  ]
 }
 export function listAdminResources() {
   return db.prepare('SELECT id, team, title, summary, visibility, status, created_at FROM resources ORDER BY created_at DESC').all().map(adminResourceSummary)
@@ -781,27 +799,52 @@ function resourceStatus(value, fallback = 'published') {
   if (!resourceStatuses.has(status)) throw new Error('Invalid resource status')
   return status
 }
+export function approved(user) { return !!user && user.status === 'approved' }
+export function staff(user) { return approved(user) && ['admin', 'teacher'].includes(user.role) }
+function requireApproved(user) { if (!approved(user)) throw new Error('请先登录并等待管理员审核通过') }
 export function getResource(id, user) {
+  const bundled = catalog.find(item => item.id === id)
+  if (bundled) return bundled
   const item = db.prepare('SELECT * FROM resources WHERE id = ?').get(id)
   if (!item) return null
   if (item.status !== 'published' && user?.role !== 'admin') return false
   if (item.visibility === 'admin' && user?.role !== 'admin') return false
   if (item.visibility !== 'public' && !(user?.role === 'admin' || hasApprovedMembership(user?.id, item.team))) return false
-  return resourceContent(item)
+  return { ...resourceContent(item), attachments: attachmentDetails(JSON.parse(item.attachments || '[]')) }
 }
-export function addResource({ team, title, summary, visibility, body, status }, actorId) {
+function attachmentDetails(ids) {
+  return ids.map(id => {
+    const file = db.prepare('SELECT id, name, mime, size FROM uploads WHERE id = ?').get(id)
+    return file && { ...file, url: `/api/files/${file.id}` }
+  }).filter(Boolean)
+}
+function validateAttachments(ids, user, purpose) {
+  if (!Array.isArray(ids) || ids.length > 10 || new Set(ids).size !== ids.length) throw new Error('每次最多上传 10 个不同附件')
+  for (const id of ids) {
+    if (typeof id !== 'string') throw new Error('附件无效')
+    const file = db.prepare('SELECT * FROM uploads WHERE id = ?').get(id)
+    if (!file || file.owner_id !== user.id || file.purpose !== purpose || file.entity_id) throw new Error('附件无效、已使用或不属于当前账号')
+  }
+}
+function bindAttachments(ids, entityId) {
+  for (const id of ids) db.prepare('UPDATE uploads SET entity_id = ? WHERE id = ?').run(entityId, id)
+}
+export function addResource({ team, title, summary, visibility, body, status, attachments = [] }, user) {
   title = String(title || '').trim(); summary = String(summary || '').trim(); body = String(body || '').trim()
   status = resourceStatus(status)
   if (!teams.includes(team) || !['public', 'team', 'admin'].includes(visibility) || !title || title.length > 120 ||
-      !summary || summary.length > 500 || !body || body.length > 30000) throw new Error('Invalid resource fields')
+      !summary || summary.length > 500 || (!body && !attachments.length) || body.length > 30000) throw new Error('Invalid resource fields')
+  if (!user || user.role !== 'admin' || !approved(user)) throw new Error('Administrator required')
+  validateAttachments(attachments, user, 'resource')
   const id = randomUUID()
   const now = new Date().toISOString()
   db.exec('BEGIN')
   try {
-    db.prepare('INSERT INTO resources (id, team, title, summary, visibility, body, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, team, title, summary, visibility, body, status, now)
+    db.prepare('INSERT INTO resources (id, team, title, summary, visibility, body, status, created_at, attachments) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, team, title, summary, visibility, body, status, now, JSON.stringify(attachments))
     db.prepare('INSERT INTO resource_contents (id, resource_id, body, storage_key, filename, size, mime, checksum, created_at, updated_at) VALUES (?, ?, ?, NULL, ?, 0, ?, ?, ?, ?)')
       .run(randomUUID(), id, body, '', '', '', now, now)
-    audit(actorId, status === 'published' ? 'resource.publish' : 'resource.create', 'resources', id, { team, visibility, status })
+    bindAttachments(attachments, id)
+    audit(user.id, status === 'published' ? 'resource.publish' : 'resource.create', 'resources', id, { team, visibility, status })
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')
@@ -1209,4 +1252,77 @@ export function offlineProjectAsset(id, actorId) {
     db.exec('COMMIT')
   } catch (error) { db.exec('ROLLBACK'); throw error }
   return projectAssetRecord(db.prepare('SELECT * FROM project_assets WHERE id = ?').get(id))
+}
+export function uploadAllowed(user, purpose) {
+  requireApproved(user)
+  if (!['resource', 'submission'].includes(purpose) || (purpose === 'resource' && user.role !== 'admin')) throw new Error('没有该上传权限')
+  const quota = db.prepare('SELECT COUNT(*) AS count, COALESCE(SUM(size), 0) AS bytes FROM uploads WHERE owner_id = ? AND entity_id IS NULL').get(user.id)
+  if (quota.count >= 30 || quota.bytes >= 200 * 1024 * 1024) throw new Error('待提交附件过多，请先发布或提交已有附件')
+}
+export function saveUpload(file, user, purpose) {
+  db.prepare('INSERT INTO uploads VALUES (?, ?, ?, ?, ?, ?, NULL, ?)')
+    .run(file.id, user.id, purpose, file.name, file.mime, file.size, new Date().toISOString())
+  return attachmentDetails([file.id])[0]
+}
+export function fileAccess(id, user) {
+  const file = db.prepare('SELECT * FROM uploads WHERE id = ?').get(id)
+  if (!file) return null
+  let allowed = false
+  if (!file.entity_id) allowed = approved(user) && file.owner_id === user.id
+  else if (file.purpose === 'resource') allowed = !!getResource(file.entity_id, user)
+  else {
+    const submission = db.prepare('SELECT author_id FROM submissions WHERE id = ?').get(file.entity_id)
+    allowed = approved(user) && submission && (staff(user) || submission.author_id === user.id)
+  }
+  return allowed ? file : false
+}
+export function listAssignments(user) {
+  requireApproved(user)
+  const rows = db.prepare('SELECT a.*, u.name AS author_name FROM assignments a JOIN users u ON u.id = a.author_id ORDER BY a.created_at DESC').all()
+  return rows.filter(a => staff(user) || ((a.team === 'all' || hasApprovedMembership(user.id, a.team)) &&
+    (a.target_grade === 'all' || a.target_grade === user.grade ||
+      (a.target_grade.startsWith('!') && a.target_grade.slice(1) !== user.grade))))
+}
+export function addAssignment({ title, body, team, dueAt, targetGrade = 'all' }, user) {
+  if (!staff(user)) throw new Error('仅老师和管理员可发布作业')
+  title = String(title || '').trim(); body = String(body || '').trim()
+  if (!title || title.length > 120 || !body || body.length > 30000 || !['all', ...teams].includes(team)) throw new Error('请填写作业标题、要求及适用团队')
+  if (targetGrade !== 'all' && (typeof targetGrade !== 'string' || !/^!?\d{2}级$/.test(targetGrade))) throw new Error('年级范围无效')
+  if (dueAt && (!Number.isFinite(Date.parse(dueAt)) || Date.parse(dueAt) <= Date.now())) throw new Error('截止时间必须在未来')
+  const id = randomUUID()
+  db.prepare('INSERT INTO assignments (id, title, body, team, due_at, author_id, created_at, target_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(id, title, body, team, dueAt ? new Date(dueAt).toISOString() : null, user.id, new Date().toISOString(), targetGrade)
+  return { id }
+}
+export function submitAssignment(assignmentId, { body, attachments = [] }, user) {
+  requireApproved(user)
+  const assignment = listAssignments(user).find(a => a.id === assignmentId)
+  if (!assignment) throw new Error('作业不存在或无权提交')
+  if (assignment.due_at && Date.parse(assignment.due_at) < Date.now()) throw new Error('作业已截止')
+  body = String(body || '').trim()
+  if ((!body && !attachments.length) || body.length > 30000) throw new Error('请填写提交说明或上传附件')
+  validateAttachments(attachments, user, 'submission')
+  const id = randomUUID()
+  db.exec('BEGIN')
+  try {
+    db.prepare('INSERT INTO submissions VALUES (?, ?, ?, ?, ?, ?)').run(id, assignmentId, user.id, body, JSON.stringify(attachments), new Date().toISOString())
+    bindAttachments(attachments, id)
+    db.exec('COMMIT')
+  } catch (error) { db.exec('ROLLBACK'); throw error }
+  return { id }
+}
+export function listSubmissions(user) {
+  requireApproved(user)
+  const rows = staff(user)
+    ? db.prepare('SELECT s.*, u.name AS author_name, u.role AS author_role, u.student_id, u.team, a.title AS assignment_title FROM submissions s JOIN users u ON u.id = s.author_id JOIN assignments a ON a.id = s.assignment_id ORDER BY s.created_at DESC').all()
+    : db.prepare('SELECT s.*, u.name AS author_name, u.role AS author_role, u.student_id, u.team, a.title AS assignment_title FROM submissions s JOIN users u ON u.id = s.author_id JOIN assignments a ON a.id = s.assignment_id WHERE s.author_id = ? ORDER BY s.created_at DESC').all(user.id)
+  return rows.map(row => ({ ...row, attachments: attachmentDetails(JSON.parse(row.attachments)) }))
+}
+
+export function discardUpload(id, user) {
+  requireApproved(user)
+  const file = db.prepare('SELECT * FROM uploads WHERE id = ? AND owner_id = ? AND entity_id IS NULL').get(id, user.id)
+  if (!file) return false
+  db.prepare('DELETE FROM uploads WHERE id = ?').run(id)
+  return file
 }

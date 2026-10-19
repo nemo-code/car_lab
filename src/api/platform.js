@@ -53,3 +53,13 @@ export const createProjectAsset = (...args) => backend.createProjectAsset(...arg
 export const updateProjectAsset = (...args) => backend.updateProjectAsset(...args)
 export const uploadProjectAssetFile = (...args) => backend.uploadProjectAssetFile(...args)
 export const offlineProjectAsset = (...args) => backend.offlineProjectAsset(...args)
+const nodeWorkflow = name => (...args) => {
+  if (activeBackend !== 'node') throw new Error('Assignments are available on the Node backend only')
+  return nodeBackend[name](...args)
+}
+export const listAssignments = nodeWorkflow('listAssignments')
+export const createAssignment = nodeWorkflow('createAssignment')
+export const listSubmissions = nodeWorkflow('listSubmissions')
+export const submitAssignment = nodeWorkflow('submitAssignment')
+export const uploadFile = nodeWorkflow('uploadFile')
+export const discardFile = nodeWorkflow('discardFile')

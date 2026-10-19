@@ -52,6 +52,9 @@ response=$(curl -fsS --max-time 5 --resolve "$domain:443:127.0.0.1" "https://$do
 [[ "$response" == *'"data":null'* ]]
 
 cp -a "$release/dist/." "$base/www/"
+# scp from Windows may create directories with mode 700.
+find "$base/www" -type d -exec chmod 755 {} +
+find "$base/www" -type f -exec chmod 644 {} +
 curl -fsS --max-time 5 --resolve "$domain:443:127.0.0.1" "https://$domain/portal?mode=apply" | grep -q '智能网联汽车实验室'
 test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/)" = 302
 systemctl is-active --quiet "$unit"
