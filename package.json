@@ -9,15 +9,38 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/index.js",
-    "test": "node --test server/platform.test.js server/workflows.test.js"
+    "test": "node --test server/platform.test.js server/workflows.test.js server/site-content-contract.test.js server/teams.test.js server/resource-files.test.js server/resource-lifecycle.test.js server/project-assets.test.js server/announcements.test.js server/memberships.test.js server/rate-limit.test.js scripts/migration-preflight.test.mjs scripts/migration-plan.test.mjs scripts/migration-import.test.mjs scripts/verify-pocketbase.test.mjs scripts/verify-pocketbase-project-assets.test.mjs scripts/rollback-check.test.mjs scripts/pocketbase-backup.test.mjs scripts/pocketbase-api-contract.test.mjs scripts/site-contract.test.mjs scripts/seed-pocketbase-projects.test.mjs scripts/capacity-smoke.test.mjs pocketbase/scaffold.test.mjs",
+    "test:platform": "node --test server/platform.test.js",
+    "test:teams": "node --test server/teams.test.js",
+    "test:migration": "node --test scripts/migration-preflight.test.mjs scripts/migration-plan.test.mjs scripts/migration-import.test.mjs",
+    "migration:import": "node scripts/migration-import.mjs",
+    "migration:preflight": "node scripts/migration-preflight.mjs",
+    "migration:plan": "node scripts/migration-plan.mjs",
+    "pocketbase:seed-site": "node scripts/seed-pocketbase-site.mjs",
+    "pocketbase:seed-projects": "node scripts/seed-pocketbase-projects.mjs",
+    "verify:pocketbase-files": "node scripts/verify-pocketbase-files.mjs",
+    "verify:pocketbase-flow": "node scripts/verify-pocketbase-flow.mjs",
+    "verify:pocketbase-project-assets": "node scripts/verify-pocketbase-project-assets.mjs",
+    "verify:pocketbase-migration": "node scripts/verify-pocketbase-migration.mjs",
+    "pocketbase:backup": "node scripts/pocketbase-backup.mjs",
+    "pocketbase:restore": "node scripts/pocketbase-backup.mjs restore",
+    "browser:smoke": "node scripts/browser-smoke.mjs",
+    "browser:pocketbase-smoke": "node scripts/browser-pocketbase-smoke.mjs",
+    "browser:e2e": "node scripts/browser-e2e.mjs",
+    "browser:pocketbase-e2e": "node scripts/browser-pocketbase-e2e.mjs",
+    "capacity:smoke": "node scripts/capacity-smoke.mjs",
+    "verify:pocketbase": "node scripts/verify-pocketbase.mjs",
+    "test:rollback": "node --test scripts/rollback-check.test.mjs",
+    "test:pocketbase-api": "node --test scripts/pocketbase-api-contract.test.mjs",
+    "test:pocketbase-project-assets": "node --test scripts/verify-pocketbase-project-assets.test.mjs"
   },
   "dependencies": {
     "pinia": "^3.0.4",
-    "vue": "^3.5.32",
+    "vue": "^3.5.44",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.5",
-    "vite": "^8.0.4"
+    "@vitejs/plugin-vue": "^6.0.10",
+    "vite": "^8.3.4"
   }
 }

@@ -1,56 +1,27 @@
-﻿<template>
-  <footer class="footer">
-    <div class="footer-container">
-      <div class="footer-content">
-        <div class="footer-left">
-          <h3 class="footer-logo">{{ brand.name }}</h3>
-          <p class="footer-email">{{ brand.address }}</p>
+<template>
+  <footer class="site-footer">
+    <div class="site-container">
+      <div class="footer-main">
+        <div class="footer-identity">
+          <router-link to="/" class="footer-brand">{{ brand.name }}</router-link>
+          <p>把想法做成能运行、能验证、能分享的智能车辆项目。</p>
+          <span>{{ brand.address }}</span>
         </div>
-
-        <div class="footer-center">
-          <div class="footer-links">
-            <router-link
-              v-for="link in footerLinks"
-              :key="link.path"
-              :to="link.path"
-              class="footer-link"
-            >
-              {{ link.label }}
-            </router-link>
-          </div>
-        </div>
-
-        <div class="footer-right">
-          <div v-if="socials.length" class="social-section">
-            <h4 class="social-title">go out</h4>
-            <div class="social-links">
-              <a
-                v-for="social in socials"
-                :key="social.label"
-                :href="social.href"
-                class="social-link"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span class="social-icon">{{ social.label.charAt(0) }}</span>
-              </a>
-            </div>
-          </div>
+        <nav class="footer-links" aria-label="页脚导航">
+          <span>探索实验室</span>
+          <router-link v-for="link in footerLinks" :key="`${link.path}-${link.label}`" :to="link.path">
+            {{ link.label }} <span aria-hidden="true">↗</span>
+          </router-link>
+        </nav>
+        <div class="footer-join">
+          <span>想一起做点真实的东西？</span>
+          <router-link to="/portal?mode=apply">了解加入方式 <span aria-hidden="true">→</span></router-link>
         </div>
       </div>
-
       <div class="footer-bottom">
-        <p class="footer-copyright">
-          Copyright © {{ new Date().getFullYear() }} {{ brand.name }}
-        </p>
-        <a
-          class="icp-link"
-          href="https://beian.miit.gov.cn/"
-          target="_blank"
-          rel="noreferrer"
-        >
-          蜀ICP备2026057846号-1
-        </a>
+        <span>© {{ new Date().getFullYear() }} {{ brand.name }}</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">蜀ICP备2026057846号-1</a>
+        <span>学习 · 实践 · 协作</span>
       </div>
     </div>
   </footer>
@@ -61,163 +32,13 @@ import { computed } from 'vue'
 import { useSiteStore } from '../stores/site'
 
 const store = useSiteStore()
-
 const brand = computed(() => store.data?.brand ?? {
   name: '智能网联汽车实验室',
-  address: '成都东软学院',
+  address: '成都东软学院 · 智能网联汽车实验室',
 })
-
 const footerLinks = computed(() => store.data?.footer?.links ?? [
-  { label: 'Contact', path: '/contact' },
-  { label: 'Projects', path: '/projects' },
-  { label: 'Services', path: '/services' },
+  { label: '实验室介绍', path: '/about' },
+  { label: '项目成果', path: '/projects' },
+  { label: '资源库', path: '/resources' },
 ])
-
-const socials = computed(() => store.data?.footer?.socials ?? [])
 </script>
-
-<style scoped>
-.footer {
-  background: #1a1a1a;
-  color: white;
-  padding: 40px 40px 20px;
-  font-family: 'Poppins', sans-serif;
-}
-
-.footer-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.footer-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 30px;
-  flex-wrap: wrap;
-  gap: 30px;
-}
-
-.footer-left {
-  flex: 1;
-  min-width: 200px;
-}
-
-.footer-logo {
-  font-size: 24px;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 10px 0;
-  line-height: 1.2;
-}
-
-.footer-email {
-  color: #888;
-  font-size: 14px;
-  margin: 0;
-}
-
-.footer-center {
-  flex: 1;
-  min-width: 200px;
-}
-
-.footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.footer-link {
-  color: white;
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.3s ease;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.footer-link:hover {
-  color: #667eea;
-}
-
-.link-icon {
-  font-size: 16px;
-}
-
-.footer-right {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.social-section {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.social-title {
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  text-transform: none;
-}
-
-.social-links {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-}
-
-.social-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: #333;
-  color: white;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  cursor: pointer;
-}
-
-.social-link:hover {
-  background: #667eea;
-  transform: translateY(-2px);
-}
-
-.footer-bottom {
-  border-top: 1px solid #333;
-  padding-top: 20px;
-  text-align: center;
-}
-
-.footer-copyright {
-  color: #888;
-  font-size: 13px;
-  margin: 0;
-}
-
-.icp-link {
-  display: inline-block;
-  margin-top: 8px;
-  color: #888;
-  font-size: 13px;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-.icp-link:hover {
-  color: #fff;
-  text-decoration: underline;
-}
-</style>

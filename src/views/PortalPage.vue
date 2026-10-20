@@ -14,13 +14,13 @@
       <p v-if="user.status !== 'approved' && user.role !== 'admin'" class="lab-notice">{{ user.status === 'pending' ? '申请等待审核。公开内容仍可直接浏览；内部资料将在审核通过后开放。' : '申请未通过，如有疑问请联系实验室管理员。' }}</p>
       <div v-if="user.status === 'approved'" class="lab-workspace-links"><router-link class="lab-primary" to="/assignments">作业与提交</router-link><router-link class="lab-outline" to="/resources">浏览资源库</router-link></div><section v-if="user.role === 'admin'" class="lab-panel"><h2>加入申请审核</h2><p v-if="!applications.length">暂无申请。</p><div v-for="entry in applications" :key="entry.id" class="lab-row"><div><strong>{{ entry.name }} · {{ roleName(entry.role) }} · {{ teamName(entry.team) }}</strong><span>{{ entry.student_id || entry.email }}{{ entry.username ? ' · ' + entry.username : '' }} · {{ entry.grade }} · {{ statusText[entry.status] }} · {{ entry.created_at.slice(0, 10) }}</span><p>{{ entry.statement }}</p></div><div v-if="entry.status === 'pending'" class="lab-row-actions"><button class="lab-primary" type="button" @click="review(entry, 'approved')">通过</button><button class="lab-outline" type="button" @click="review(entry, 'rejected')">拒绝</button></div></div></section>
       <section v-if="user.role === 'admin'" class="lab-panel"><h2>发布团队资源</h2><p>可发布文字、图片、PDF、Office 文档、视频或项目压缩包；团队内部资料向本团队学生和老师开放。</p><form class="lab-form lab-form-wide" @submit.prevent="publish"><label>所属团队<select v-model="draft.team"><option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option></select></label><label>访问范围<select v-model="draft.visibility"><option value="public">所有人可访问</option><option value="team">仅该团队成员</option></select></label><label>标题<input v-model.trim="draft.title" maxlength="120" required /></label><label>摘要<input v-model.trim="draft.summary" maxlength="500" required /></label><label class="lab-span">正文 / 代码片段<textarea v-model.trim="draft.body" rows="8" maxlength="30000" placeholder="填写说明，或直接上传附件"></textarea></label><div class="lab-span"><FilePicker v-model="resourceFiles" purpose="resource" :disabled="busy" @uploading="uploading = $event" /></div><button class="lab-primary" :disabled="busy || uploading">发布资源</button></form></section>
-      <section class="lab-panel"><h2>账号安全</h2><form class="lab-form" @submit.prevent="updatePassword"><label>当前密码<input v-model="passwords.oldPassword" type="password" autocomplete="current-password" required /></label><label>新密码（至少 6 位）<input v-model="passwords.newPassword" type="password" autocomplete="new-password" minlength="6" required /></label><button class="lab-outline" :disabled="busy">修改密码</button></form></section>
+      <section class="lab-panel"><h2>账号安全</h2><form class="lab-form" @submit.prevent="updatePassword"><label>当前密码<input v-model="passwords.oldPassword" type="password" autocomplete="current-password" required /></label><label>新密码（至少 10 位）<input v-model="passwords.newPassword" type="password" autocomplete="new-password" minlength="10" required /></label><button class="lab-outline" :disabled="busy">修改密码</button></form></section>
     </template>
   </div>
 </template>
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { teams, teamName } from '../lab'
 import * as api from '../api/platform'
 import FilePicker from '../components/FilePicker.vue'
@@ -33,10 +33,7 @@ const credentials = reactive({ account: '', password: '' })
 const application = reactive({ role: 'student', email: '', name: '', studentId: '', username: '', team: teams.some(t => t.id === route.query.team) ? route.query.team : 'software', statement: '', password: '' })
 const studentIdError = computed(() => application.role === 'student' && application.studentId && !/^\d{11}$/.test(application.studentId) ? '学号必须是 11 位数字' : '')
 const loginIdError = computed(() => /^\d+$/.test(credentials.account) && credentials.account.length !== 11 ? '学号必须是 11 位数字' : '')
-const usernameError = computed(() => application.username && !/^\p{L}[\p{L}\p{N}_-]{1,23}$/u.test(application.username) ? '用户名须为 2-24 位，以字母或汉字开头，可包含数字、_、-' : '')
-const draft = reactive({ team: 'software', visibility: 'public', title: '', summary: '', body: '' })
-const passwords = reactive({ oldPassword: '', newPassword: '' })
-const statusText = { pending: '待审核', approved: '已通过', rejected: '未通过' }
+const usernameError = computed(() => application.username && !/^[a-z][a-z0-9_.-]{2,29}$/.test(application.username.toLowerCase()) ? '用户名须为 3-30 位小写英文，以字母开头，可包含字母、数字、_、-、.' : '')
 async function run(action) { busy.value = true; error.value = ''; message.value = ''; try { await action() } catch (e) { error.value = e.message || '操作失败' } finally { busy.value = false } }
 async function refresh() { user.value = (await api.getMe()).data; if (user.value?.role === 'admin') applications.value = (await api.listApplications()).data }
 onMounted(async () => { try { await refresh() } catch (e) { error.value = e.message } finally { loading.value = false } })

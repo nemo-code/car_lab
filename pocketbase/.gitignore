@@ -1,0 +1,10 @@
+pb_data/
+pb_public/
+pocketbase
+pocketbase.exe
+backups/
+*.zip
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*

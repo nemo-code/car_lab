@@ -13,6 +13,7 @@ test('teachers, team assignments, resource uploads, private downloads and persis
   const port = await new Promise(resolve => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => resolve(p)) }) })
   let server
   const base = `http://127.0.0.1:${port}/api`
+  let applicantAddress = 0
   async function start() {
     server = spawn(process.execPath, ['server/index.js'], { env: { ...env, PORT: String(port) }, stdio: 'pipe' })
     for (let i = 0; i < 80; i++) {
@@ -23,7 +24,7 @@ test('teachers, team assignments, resource uploads, private downloads and persis
   }
   async function stop() { if (server && server.exitCode === null) { server.kill(); await new Promise(resolve => server.once('exit', resolve)) } }
   async function call(route, data, cookie) {
-    const res = await fetch(base + route, { method: data === undefined ? 'GET' : 'POST', headers: { 'X-Forwarded-Proto': 'https', 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) }, ...(data === undefined ? {} : { body: JSON.stringify(data) }) })
+    const res = await fetch(base + route, { method: data === undefined ? 'GET' : 'POST', headers: { 'X-Forwarded-Proto': 'https', 'Content-Type': 'application/json', ...(route === '/apply' ? { 'X-Real-IP': `198.51.100.${++applicantAddress}` } : {}), ...(cookie ? { Cookie: cookie } : {}) }, ...(data === undefined ? {} : { body: JSON.stringify(data) }) })
     return { status: res.status, body: await res.json(), cookie: res.headers.get('set-cookie')?.split(';')[0] }
   }
   const upload = (cookie, purpose, name, content, headers = {}) => fetch(base + `/uploads?purpose=${purpose}&name=${encodeURIComponent(name)}`, { method: 'POST', headers: { 'X-Forwarded-Proto': 'https', 'Content-Type': 'application/octet-stream', ...(cookie ? { Cookie: cookie } : {}), ...headers }, body: content })

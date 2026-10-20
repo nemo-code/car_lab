@@ -38,8 +38,26 @@
       "assets/硬件一组-slide-3.png",
       "assets/硬件一组-slide-4.jpeg"
     ],
-    "videos": [],
-    "files": [],
+    "videos": [
+      {
+        "label": "演示视频.mp4",
+        "path": "../硬件一组/项目资料/演示视频.mp4"
+      }
+    ],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../硬件一组/智能循迹小车设计与实现-硬件1组实训汇报.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../硬件一组/硬件1组-小学期实训报告模板.docx"
+      },
+      {
+        "label": "代码展示",
+        "path": "../硬件一组/项目资料/代码展示.docx"
+      }
+    ],
     "accent": "cyan"
   },
   {
@@ -80,8 +98,26 @@
       "assets/硬件二组-slide-3.png",
       "assets/硬件二组-slide-4.png"
     ],
-    "videos": [],
-    "files": [],
+    "videos": [
+      {
+        "label": "小车按键前进后退左转右转.mp4",
+        "path": "../硬件二组/项目资料（代码、文件、演示视频或截图）一份/小车按键前进后退左转右转.mp4"
+      },
+      {
+        "label": "小车循迹.mp4",
+        "path": "../硬件二组/项目资料（代码、文件、演示视频或截图）一份/小车循迹.mp4"
+      }
+    ],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../硬件二组/普中51单片机智能小车项目汇报 (1).pptx"
+      },
+      {
+        "label": "项目代码说明",
+        "path": "../硬件二组/项目资料（代码、文件、演示视频或截图）一份/小学期普中51小车项目代码.docx"
+      }
+    ],
     "accent": "cyan"
   },
   {
@@ -123,8 +159,34 @@
       "assets/硬件三组-slide-3.jpg",
       "assets/硬件三组-slide-4.jpg"
     ],
-    "videos": [],
-    "files": [],
+    "videos": [
+      {
+        "label": "蓝牙控制小车.mp4",
+        "path": "../硬件三组/项目资料/蓝牙控制小车.mp4"
+      },
+      {
+        "label": "小车避障.mp4",
+        "path": "../硬件三组/项目资料/小车避障.mp4"
+      },
+      {
+        "label": "小车循迹.mp4",
+        "path": "../硬件三组/项目资料/小车循迹.mp4"
+      }
+    ],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../硬件三组/基于STM32的智能小车设计.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../硬件三组/硬件组3组-小学期实训报告.docx"
+      },
+      {
+        "label": "Keil 工程源码",
+        "path": "../硬件三组/项目资料/红外循迹"
+      }
+    ],
     "accent": "cyan"
   },
   {
@@ -164,8 +226,22 @@
       "assets/硬件四组-slide-2.jpeg",
       "assets/硬件四组-slide-3.jpeg"
     ],
-    "videos": [],
-    "files": [],
+    "videos": [
+      {
+        "label": "cfc7aa8220dc934dd77e32ea228ee10b.mp4",
+        "path": "../硬件四组/cfc7aa8220dc934dd77e32ea228ee10b.mp4"
+      }
+    ],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../硬件四组/基于STM32智能小车的避障与红外循迹系统-答辩PPT.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../硬件四组/24016020727-魏雅莉-小学期实训报告.docx"
+      }
+    ],
     "accent": "cyan"
   },
   {
@@ -206,8 +282,30 @@
       "assets/硬件五组-slide-3.png",
       "assets/硬件五组-slide-4.png"
     ],
-    "videos": [],
-    "files": [],
+    "videos": [
+      {
+        "label": "演示视频1.mp4",
+        "path": "../硬件五组/演示视频1.mp4"
+      },
+      {
+        "label": "演示视频2.mp4",
+        "path": "../硬件五组/演示视频2.mp4"
+      }
+    ],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../硬件五组/果实成熟度智能监测与采摘决策系统 .pptx"
+      },
+      {
+        "label": "项目报告 1",
+        "path": "../硬件五组/24016021316-邓卜弋-小学期实训报告(2).docx"
+      },
+      {
+        "label": "项目报告 2",
+        "path": "../硬件五组/24016021531-黄滢芝-小学期实训报告.docx"
+      }
+    ],
     "accent": "lime"
   },
   {
@@ -249,7 +347,20 @@
       "assets/软件一组-slide-4.jpeg"
     ],
     "videos": [],
-    "files": [],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../软件一组/HelloCar车载沙盘App项目演示.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../软件一组/软件一组-小学期实训报告--HelloCar.docx"
+      },
+      {
+        "label": "App 工程压缩包",
+        "path": "../软件一组/MyApplicationcar.7z"
+      }
+    ],
     "accent": "violet"
   },
   {
@@ -292,7 +403,20 @@
       "assets/软件二组-slide-4.png"
     ],
     "videos": [],
-    "files": [],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../软件二组/smart-copilot-ppt.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../软件二组/24016021434-唐嘉潞-小学期实训报告.docx"
+      },
+      {
+        "label": "实习周报",
+        "path": "../软件二组/24016021434-唐嘉潞-小学期实训实习周报.docx"
+      }
+    ],
     "accent": "violet"
   },
   {
@@ -335,7 +459,20 @@
       "assets/软件三组-slide-4.png"
     ],
     "videos": [],
-    "files": [],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../软件三组/HelloCar项目汇报PPT.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../软件三组/软件三组-小学期实训报告.docx"
+      },
+      {
+        "label": "项目工程压缩包",
+        "path": "../软件三组/HELLOCAR项目.zip"
+      }
+    ],
     "accent": "violet"
   },
   {
@@ -377,7 +514,20 @@
       "assets/游戏组-slide-4.jpeg"
     ],
     "videos": [],
-    "files": [],
+    "files": [
+      {
+        "label": "成果汇报 PPT",
+        "path": "../游戏组/驰界回响项目汇报.pptx"
+      },
+      {
+        "label": "项目报告",
+        "path": "../游戏组/游戏组-小学期实训报告.docx"
+      },
+      {
+        "label": "项目工程压缩包",
+        "path": "../游戏组/完整联机功能.zip"
+      }
+    ],
     "accent": "orange"
   }
 ]

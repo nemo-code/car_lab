@@ -1,8 +1,8 @@
 <template>
-  <main class="resource-page">
+  <div class="resource-page">
     <section class="resource-hero">
       <div>
-        <p class="eyebrow">SMART VEHICLE LAB · RESOURCE LIBRARY</p>
+        <p class="eyebrow">实验室 / 资源库</p>
         <h1>{{ resources.hero.title }}</h1>
         <p class="hero-copy">{{ resources.hero.subtitle }}</p>
       </div>
@@ -19,12 +19,12 @@
       </div>
     </section>
 
-    <section class="lab-wrap lab-published" aria-label="团队发布资源"><div class="lab-heading"><span class="lab-eyebrow">团队资料</span><h2>公开资源与内部资料</h2><p>公开资源任何人都可以阅读；内部资料仅限审核通过的本团队学生、老师和管理员。GitHub 中已有的小学期项目已整理到下方条目。</p></div><p v-if="resourceError" class="lab-error" role="alert">{{ resourceError }}</p><div v-if="published.length" class="lab-resource-list"><article v-for="item in published" :key="item.id" class="lab-resource-item"><div><span class="lab-eyebrow">{{ teamName(item.team) }} · {{ item.visibility === 'public' ? '公开' : '团队内部' }}</span><h3>{{ item.title }}</h3><p>{{ item.summary }}</p></div><button type="button" class="lab-outline" @click="openPublished(item)">阅读资料</button></article></div><p v-else class="lab-empty">暂无已发布资料。下方可以先查看实验室公开的资源目录。</p></section>
+    <section class="lab-wrap lab-published" aria-label="团队发布资源"><div class="lab-heading"><span class="lab-eyebrow">团队资料</span><h2>公开资源与内部资料</h2><p>公开资源任何人都可以阅读；内部资料仅限审核通过的本团队成员。</p></div><p v-if="resourceError" class="lab-error" role="alert">{{ resourceError }}</p><div class="lab-published-toolbar"><label>搜索已发布资源<input v-model.trim="publishedQuery" type="search" placeholder="标题、摘要或团队" /></label><label>团队<select v-model="publishedTeam"><option value="all">全部团队</option><option v-for="team in publishedTeams" :key="team.id" :value="team.id">{{ team.name }}</option></select></label><label>权限<select v-model="publishedVisibility"><option value="all">全部权限</option><option value="public">公开</option><option value="team">团队内部</option></select></label></div><div v-if="filteredPublished.length" class="lab-resource-list"><article v-for="item in filteredPublished" :key="item.id" class="lab-resource-item"><div><span class="lab-eyebrow">{{ teamName(item.team) }} · {{ item.visibility === 'public' ? '公开' : '团队内部' }}</span><h3>{{ item.title }}</h3><p>{{ item.summary }}</p></div><button type="button" class="lab-outline" @click="openPublished(item, $event)">阅读资料</button></article></div><p v-else class="lab-empty">{{ published.length ? '没有匹配的已发布资源。' : '暂无已发布资料。下方可以先查看实验室公开的资源目录。' }}</p></section>
 
     <section class="library-section">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">CATALOGUE</p>
+          <p class="eyebrow">资源目录</p>
           <h2>按设备与方向查找</h2>
         </div>
         <p class="result-count">显示 {{ filteredResources.length }} / {{ resources.items.length }} 条</p>
@@ -36,13 +36,16 @@
           <input v-model="searchQuery" type="search" placeholder="输入名称、关键词或方向" />
         </label>
 
-        <div class="category-tabs" role="tablist" aria-label="资源分类">
+        <div class="category-tabs" role="tablist" aria-label="资源分类" @keydown="handleCategoryKeydown">
           <button
             v-for="category in categories"
             :key="category.value"
+            :id="`resource-tab-${category.value}`"
             type="button"
             :class="['category-tab', { selected: selectedCategory === category.value }]"
             :aria-selected="selectedCategory === category.value"
+            aria-controls="resource-panel"
+            :tabindex="selectedCategory === category.value ? 0 : -1"
             role="tab"
             @click="selectedCategory = category.value"
           >
@@ -51,43 +54,45 @@
         </div>
       </div>
 
-      <div v-if="filteredResources.length" class="resource-grid">
-        <article v-for="item in filteredResources" :key="item.id" class="resource-card">
-          <div class="card-topline">
-            <span class="resource-type">{{ item.type }}</span>
-            <span :class="['status', item.status === '待上传' ? 'pending' : 'ready']">{{ item.status }}</span>
-          </div>
-          <h3>{{ item.title }}</h3>
-          <p class="resource-summary">{{ item.summary }}</p>
-          <div class="tag-list">
-            <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
-          </div>
-          <div class="card-footer">
-            <span>{{ item.level }}</span>
-            <button type="button" class="detail-button" @click="selectedResource = item">查看条目</button>
-          </div>
-        </article>
-      </div>
+      <div id="resource-panel" class="resource-results" role="tabpanel" :aria-labelledby="`resource-tab-${selectedCategory}`" tabindex="0">
+        <div v-if="filteredResources.length" class="resource-grid">
+          <article v-for="item in filteredResources" :key="item.id" class="resource-card">
+            <div class="card-topline">
+              <span class="resource-type">{{ item.type }}</span>
+              <span :class="['status', item.status === '待上传' ? 'pending' : 'ready']">{{ item.status }}</span>
+            </div>
+            <h3>{{ item.title }}</h3>
+            <p class="resource-card-summary">{{ item.summary }}</p>
+            <div class="tag-list">
+              <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
+            </div>
+            <div class="card-footer">
+              <span>{{ item.level }}</span>
+              <button type="button" class="detail-button" @click="openCatalogResource(item, $event)">查看条目</button>
+            </div>
+          </article>
+        </div>
 
-      <div v-else class="empty-state">
-        <strong>没有匹配的资源</strong>
-        <p>换一个关键词或选择“全部资源”继续查找。</p>
+        <div v-else class="empty-state">
+          <strong>没有匹配的资源</strong>
+          <p>换一个关键词或选择“全部资源”继续查找。</p>
+        </div>
       </div>
     </section>
 
     <section class="workflow-band">
       <div>
-        <p class="eyebrow">NEXT STEP</p>
+        <p class="eyebrow">下一步</p>
         <h2>把实验资料沉淀成可复用的学习路径</h2>
       </div>
       <p>后续可继续接入 PDF、代码仓库、接线图、实验记录和项目模板，形成从设备认识到项目实践的完整资源链。</p>
     </section>
 
-    <div v-if="selectedResource" class="detail-backdrop" @click.self="selectedResource = null">
-      <aside class="detail-panel" aria-label="资源详情">
-        <button type="button" class="close-button" aria-label="关闭资源详情" @click="selectedResource = null">×</button>
+    <div v-if="selectedResource" class="detail-backdrop" @click.self="closeCatalogResource">
+      <aside ref="catalogDialog" class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="catalog-resource-title" tabindex="-1" @keydown="handleCatalogDialogKeydown">
+        <button type="button" class="close-button" aria-label="关闭资源详情" @click="closeCatalogResource">×</button>
         <p class="eyebrow">{{ selectedResource.type }}</p>
-        <h2>{{ selectedResource.title }}</h2>
+        <h2 id="catalog-resource-title">{{ selectedResource.title }}</h2>
         <p class="detail-description">{{ selectedResource.description }}</p>
         <dl class="detail-list">
           <div>
@@ -108,24 +113,41 @@
         </div>
       </aside>
     </div>
-    <div v-if="openedPublished" class="detail-backdrop" @click.self="openedPublished = null"><aside class="detail-panel" aria-label="团队资源正文"><button type="button" class="close-button" aria-label="关闭资源详情" @click="openedPublished = null">×</button><p class="eyebrow">{{ teamName(openedPublished.team) }}</p><h2>{{ openedPublished.title }}</h2><pre class="lab-resource-body">{{ openedPublished.body }}</pre><AttachmentList :files="openedPublished.attachments" /></aside></div>
-  </main>
+    <div v-if="openedPublished" class="detail-backdrop" @click.self="closePublishedResource"><aside ref="publishedDialog" class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="published-resource-title" tabindex="-1" @keydown="handlePublishedDialogKeydown"><button type="button" class="close-button" aria-label="关闭资源详情" @click="closePublishedResource">×</button><p class="eyebrow">{{ teamName(openedPublished.team) }}</p><h2 id="published-resource-title">{{ openedPublished.title }}</h2><pre class="lab-resource-body">{{ openedPublished.body }}</pre><a v-if="fileUrl" class="lab-outline" :href="fileUrl" target="_blank" rel="noopener" download>{{ openedPublished.filename || '下载附件' }}</a>    <p v-else-if="openedPublished.file && fileLoading" class="lab-notice">正在准备附件下载…</p><AttachmentList :files="openedPublished.attachments" /></aside></div>
+  </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, onMounted, watch } from 'vue'
 import { useSiteStore } from '../stores/site'
-import { listResources, readResource } from '../api/platform'
-import { teamName } from '../lab'
+import { useTeamsStore } from '../stores/teams'
+import { getProtectedResourceFileUrl, listResources, readResource } from '../api/platform'
+import { handleDialogKeydown, handleTablistKeydown } from '../utils/accessibility'
 import AttachmentList from '../components/AttachmentList.vue'
 
 const siteStore = useSiteStore()
+const teamsStore = useTeamsStore()
+const teamName = id => teamsStore.publicData.find(team => team.id === id || team.code === id)?.name || id
 const searchQuery = ref('')
+const publishedQuery = ref('')
+const publishedTeam = ref('all')
+const publishedVisibility = ref('all')
 const selectedCategory = ref('all')
 const selectedResource = ref(null)
-const published = ref([]), openedPublished = ref(null), resourceError = ref('')
-onMounted(async () => { try { published.value = (await listResources()).data } catch { resourceError.value = '资源列表暂时无法加载' } })
-async function openPublished(item) { resourceError.value = ''; try { openedPublished.value = (await readResource(item.id)).data } catch { resourceError.value = '该资料暂时无法读取。内部资料需要登录并通过审核，学生还需属于对应团队。'; document.querySelector('.lab-published')?.scrollIntoView({ behavior: 'smooth' }) } }
+const published = ref([]), openedPublished = ref(null), fileUrl = ref(''), fileLoading = ref(false), resourceError = ref(''), catalogTrigger = ref(null), publishedTrigger = ref(null), catalogDialog = ref(null), publishedDialog = ref(null)
+onMounted(async () => { try { await teamsStore.loadTeams(); published.value = (await listResources()).data } catch { resourceError.value = '资源列表暂时无法加载' } })
+function openCatalogResource(item, event) { catalogTrigger.value = event?.currentTarget || null; selectedResource.value = item }
+function closeCatalogResource() { selectedResource.value = null; nextTick(() => catalogTrigger.value?.focus?.()) }
+async function openPublished(item, event) { publishedTrigger.value = event?.currentTarget || null; resourceError.value = ''; try { openedPublished.value = (await readResource(item.id)).data; fileUrl.value = ''; if (openedPublished.value.file) { fileLoading.value = true; fileUrl.value = await getProtectedResourceFileUrl(openedPublished.value) } } catch { resourceError.value = '需要登录并通过所属团队审核才能阅读该资料。'; document.querySelector('.lab-published')?.scrollIntoView({ behavior: 'smooth' }) } finally { fileLoading.value = false } }
+function closePublishedResource() { openedPublished.value = null; nextTick(() => publishedTrigger.value?.focus?.()) }
+function handleCategoryKeydown(event) { handleTablistKeydown(event) }
+function handleCatalogDialogKeydown(event) { handleDialogKeydown(event, closeCatalogResource) }
+function handlePublishedDialogKeydown(event) { handleDialogKeydown(event, closePublishedResource) }
+watch([selectedResource, openedPublished], ([catalog, publishedItem]) => {
+  document.body.classList.toggle('modal-open', Boolean(catalog || publishedItem))
+  if (catalog || publishedItem) nextTick(() => (catalog ? catalogDialog.value : publishedDialog.value)?.querySelector('.close-button')?.focus())
+})
+onBeforeUnmount(() => { document.body.classList.remove('modal-open') })
 
 const fallback = {
   hero: {
@@ -154,6 +176,21 @@ const filteredResources = computed(() => {
   })
 })
 
+const publishedTeams = computed(() => {
+  const ids = [...new Set(published.value.map(item => item.team).filter(Boolean))]
+  return ids.map(id => ({ id, name: teamName(id) }))
+})
+
+const filteredPublished = computed(() => {
+  const query = publishedQuery.value.toLocaleLowerCase()
+  return published.value.filter(item => {
+    const teamMatches = publishedTeam.value === 'all' || item.team === publishedTeam.value
+    const visibilityMatches = publishedVisibility.value === 'all' || item.visibility === publishedVisibility.value
+    const haystack = [item.title, item.summary, teamName(item.team)].filter(Boolean).join(' ').toLocaleLowerCase()
+    return teamMatches && visibilityMatches && (!query || haystack.includes(query))
+  })
+})
+
 const summaryStats = computed(() => [
   { value: resources.value.items.length, label: '资源条目' },
   { value: resources.value.categories.length, label: '设备方向' },
@@ -165,8 +202,8 @@ const summaryStats = computed(() => [
 .resource-page {
   min-height: 100vh;
   padding: 36px clamp(20px, 5vw, 80px) 64px;
-  background: #f5f7f8;
-  color: #17212b;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 .resource-hero,
@@ -183,14 +220,14 @@ const summaryStats = computed(() => [
   gap: 32px;
   align-items: end;
   padding: 46px clamp(24px, 5vw, 72px);
-  background: #123b3d;
+  background: var(--navy);
   color: #f4f8f3;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .eyebrow {
   margin: 0 0 12px;
-  color: #8eb9a9;
+  color: #94c5b5;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -406,10 +443,10 @@ const summaryStats = computed(() => [
   font-size: 1.12rem;
 }
 
-.resource-summary {
+.resource-card-summary {
   flex: 1;
   margin: 0;
-  color: #65727a;
+  color: var(--muted);
   line-height: 1.7;
 }
 
@@ -477,7 +514,7 @@ const summaryStats = computed(() => [
 
 .detail-backdrop {
   position: fixed;
-  z-index: 1100;
+  z-index: 1200;
   inset: 0;
   display: flex;
   justify-content: end;

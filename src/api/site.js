@@ -1,19 +1,6 @@
-﻿import { request } from './client'
+import * as nodeSite from './site-node.js'
+import * as platform from './platform.js'
 
-export function fetchSite() {
-  return request('/site')
-}
+const usePocketBase = String(import.meta.env.VITE_PLATFORM_BACKEND || 'node').trim().toLowerCase() === 'pocketbase'
 
-export function submitContact(payload) {
-  return request('/contact', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
-}
-
-export function submitRecruitment(payload) {
-  return request('/recruitment', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  })
-}
+export const fetchSite = usePocketBase ? platform.getSiteContent : nodeSite.fetchSite
